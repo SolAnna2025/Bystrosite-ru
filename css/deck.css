@@ -1,0 +1,569 @@
+/* ============================================================
+   Быстросайт — presentation deck
+   Architectural-editorial system: fixed 1920x1080 (16:9) stage,
+   scaled to fit the viewport so it reads the same on a phone and
+   a wide screen. Photo-led spreads, quiet typography, no card
+   chrome, no gold frames — a private-residence catalogue, not a
+   listing brochure.
+   ============================================================ */
+
+#view-preview { background: #17160f; }
+
+.stage-outer {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #17160f;
+  touch-action: pan-y;
+  overflow: hidden; /* the slide transition below travels a full stage-width off to each side */
+}
+.stage {
+  position: relative;
+  width: 1920px; height: 1080px;
+  flex: none;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+.slide {
+  position: absolute; inset: 0;
+  overflow: hidden;
+}
+
+/* ---------------- Slide transition ---------------- */
+/* A plain horizontal slider: the outgoing slide and the incoming one
+   travel together in the same direction, passing off the same edge they
+   arrive from. Replaces an earlier 3D page-turn (rotateY) effect that
+   read as broken/glitchy rather than premium — this one is just two
+   translateX animations, nothing that can look wrong. Both directions'
+   in/out pairs share timing so they arrive/leave in perfect sync. */
+.slide.page-slide-out-next { animation: bsSlideOutLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.slide.page-slide-out-prev { animation: bsSlideOutRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.slide.page-slide-in-next { animation: bsSlideInFromRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.slide.page-slide-in-prev { animation: bsSlideInFromLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes bsSlideOutLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+@keyframes bsSlideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+@keyframes bsSlideInFromRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes bsSlideInFromLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide.page-slide-out-next, .slide.page-slide-out-prev,
+  .slide.page-slide-in-next, .slide.page-slide-in-prev { animation: none; }
+}
+
+/* ---------------- Loading / not-found state (/p/<id> share links) ---------------- */
+.deck-status-msg {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #f2efe8; font-family: var(--font-body); font-size: 18px;
+  text-align: center; padding: 0 40px;
+}
+.deck-expired-msg { flex-direction: column; gap: 24px; }
+.deck-expired-msg p { margin: 0; max-width: 480px; }
+
+/* ---------------- Photos & placeholders ---------------- */
+/* Brightness trimmed 12%, no warm/yellow cast — a quiet, natural print.
+   position:absolute + inset:0 (not width/height:100%) is deliberate: every
+   .ph-img's immediate parent (.ph-media, .rg-item) is itself a flex/grid
+   item in the multi-photo slides (Details, Interiors, Bedrooms, Bathrooms).
+   A percentage-sized <img> that is *also* asked to participate in a flex/
+   grid track's own sizing is exactly the case mobile WebKit gets wrong —
+   it can end up stretching the photo to whatever box the track resolves
+   to instead of letting object-fit:cover crop it. Taking the img out of
+   flow entirely and pinning it to its positioned ancestor's box sidesteps
+   that: the ancestor still sizes normally via flex/grid, the image just
+   fills whatever box results. */
+.ph-img, .ph-media img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  filter: brightness(0.88) saturate(0.93) contrast(1.02);
+}
+.ph-media { position: relative; overflow: hidden; background: var(--color-surface-2); }
+.ph-placeholder {
+  width: 100%; height: 100%; position: relative;
+  background: var(--color-surface-2);
+}
+/* Label text comes from js/deck.js media() via t('photoPlaceholder') — a
+   real, localized DOM node, not a CSS ::after content string (which can't
+   be translated and used to silently show Russian text under English UI). */
+.ph-placeholder-label {
+  position: absolute; right: 18px; bottom: 14px;
+  color: var(--color-text-muted);
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7;
+}
+.ph-scrim-bottom {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(15, 14, 11, 0.62) 0%, rgba(15, 14, 11, 0.18) 42%, rgba(15, 14, 11, 0) 62%);
+  pointer-events: none;
+}
+.ph-scrim-full {
+  position: absolute; inset: 0;
+  background: rgba(12, 11, 9, 0.22);
+  pointer-events: none;
+}
+
+/* ---------------- Editorial typography ---------------- */
+.ed-kicker {
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.slide-on-photo .ed-kicker { color: rgba(242, 239, 232, 0.72); }
+.ed-title {
+  font-family: var(--font-heading); font-weight: 500;
+  font-size: 88px; line-height: 1.02; letter-spacing: -0.01em;
+  color: var(--color-text); margin: 0;
+}
+.slide-on-photo .ed-title { color: #f2efe8; }
+.ed-title-md { font-size: 60px; }
+/* Two-line headings (built with a manual <br>) need a looser line-height —
+   at the base 1.02 a descender on line 1 (e.g. "р") visually collides with
+   an ascender on line 2 in this serif. */
+.ed-title-2l { line-height: 1.18; }
+.ed-phrase {
+  font-family: var(--font-heading); font-style: italic; font-weight: 500;
+  font-size: 48px; line-height: 1.3; color: #f2efe8;
+  max-width: 900px;
+}
+.ed-body {
+  font-family: var(--font-body); font-weight: 400; font-size: 21px;
+  line-height: 1.65; color: var(--color-text-muted);
+  max-width: 560px;
+}
+.ed-rule { width: 64px; height: 1px; background: var(--color-text); opacity: 0.5; border: 0; margin: 0; }
+.slide-on-photo .ed-rule { background: #f2efe8; }
+.ed-rule-full { width: 100%; height: 1px; background: var(--color-border); border: 0; margin: 0; }
+
+/* ---------------- Page chrome ---------------- */
+.pg-number {
+  position: absolute; z-index: 3;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.1em; color: var(--color-text-muted);
+}
+.slide-on-photo .pg-number { color: rgba(242, 239, 232, 0.75); }
+.pg-number-br { right: 56px; bottom: 44px; }
+.pg-number-tl { left: 56px; top: 44px; }
+
+.slide-pad {
+  position: relative; z-index: 2;
+  height: 100%; padding: 90px 100px;
+  display: flex; flex-direction: column;
+}
+
+/* ============================================================
+   1 — Cover: full-bleed photo, title lockup bottom-left
+   ============================================================ */
+.slide-cover .slide-pad { justify-content: flex-end; gap: 20px; padding-bottom: 96px; }
+.slide-cover .ed-title { font-size: 104px; }
+
+/* ============================================================
+   2 — Emotion: full-bleed photo, centred editorial phrase
+   ============================================================ */
+.slide-emotion .slide-pad { align-items: center; justify-content: center; text-align: center; }
+.slide-emotion .ed-phrase { font-size: 56px; }
+
+/* ---------------- Ken Burns (slow zoom on Cover / Emotion / Final) ----------------
+   Armed from JS (armKenBurns() in js/deck.js), not from a CSS class selector:
+   an .active-gated rule here is fine on paper — flipTo() adds .active to the
+   incoming slide only once the page-turn genuinely finishes, so the 10s clock
+   would start exactly when the viewer can see it — but in practice a rule
+   shaped like ".slide-final.active .cf-photo-area .ph-media img" reliably hit
+   a Chromium style-matching quirk where that one parsed rule never re-applied
+   once .active was added later via classList (a byte-identical rule inserted
+   at runtime worked fine — the parsed-at-load instance didn't). Driving it
+   with img.style.animation from JS sidesteps that entirely: it's applied
+   directly to the element, not dependent on any selector re-matching after a
+   class change. transform-origin/keyframes stay here; only the trigger moved.
+   Emotion runs the opposite direction from Cover/Final (zoom out instead of
+   in) so the two emotional beats read as a deliberate contrast rather than a
+   repeat of the same move; its resting (pre-arm) transform is pinned to the
+   animation's own start frame so there's no jump-cut the instant it's armed. */
+.slide-cover .ph-media img,
+.slide-final .cf-photo-area .ph-media img,
+.slide-emotion .ph-media img {
+  transform-origin: center center;
+}
+.slide-emotion .ph-media img {
+  transform: scale(1.08);
+}
+@keyframes kbZoomIn {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+@keyframes kbZoomOut {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-emotion .ph-media img {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   3 / 5 — Asymmetric two-photo spreads (architecture / outdoor)
+   ============================================================ */
+.slide-split-a { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
+.slide-split-a .split-head { padding: 90px 100px 0; flex: none; }
+.slide-split-a .split-photos { display: flex; gap: 3px; flex: 1; margin-top: 28px; min-height: 0; }
+.slide-split-a .split-photos .ph-media { flex: 1; }
+/* Exactly two photos (the common case) keep the asymmetric hero ratio;
+   three or four (extra facade/exterior shots) fall back to equal shares. */
+.slide-split-a .split-photos.split-photos-2 .ph-media:nth-child(1) { flex: 1.5; }
+.slide-split-a .split-foot {
+  flex: none; display: flex; align-items: center;
+  min-height: 96px; padding: 0 100px;
+}
+.ed-stats {
+  font-family: var(--font-body); font-size: 19px; font-weight: 600;
+  letter-spacing: 0.03em; color: var(--color-text);
+}
+.ed-stats .sep { color: var(--color-text-muted); margin: 0 14px; font-weight: 400; }
+
+/* ============================================================
+   4 — Living spaces: large photo + text column
+   ============================================================ */
+.slide-living { display: grid; grid-template-columns: 54% 46%; background: var(--color-bg); }
+.slide-living .living-text {
+  display: flex; flex-direction: column; justify-content: center; gap: 20px;
+  padding: 90px 100px;
+}
+.spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.spec-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--color-border);
+  font-size: 16px;
+}
+.spec-row .sr-label { color: var(--color-text-muted); }
+.spec-row .sr-value { font-weight: 600; text-align: right; }
+.extra-features { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.extra-features .ef-label {
+  font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.extra-features p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--color-text); }
+
+/* ============================================================
+   6 — Details: three equal photos
+   ============================================================ */
+.slide-grid3 { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
+.slide-grid3 .grid3-head {
+  flex: none; padding: 90px 100px 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.slide-grid3 .grid3-photos { display: flex; gap: 3px; flex: 1; margin-top: 28px; min-height: 0; }
+.slide-grid3 .grid3-photos .ph-media { flex: 1; }
+
+/* ============================================================
+   Bedrooms / bathrooms galleries (count-driven, inserted after
+   Details when the listing has bedrooms/bathrooms > 0)
+   ============================================================ */
+.slide-roomgrid { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
+.slide-roomgrid .roomgrid-head { flex: none; padding: 90px 100px 0; }
+.slide-roomgrid .roomgrid-photos {
+  flex: 1; margin-top: 28px; min-height: 0;
+  display: grid; grid-auto-rows: 1fr; gap: 8px;
+}
+.rg-item { position: relative; overflow: hidden; }
+.rg-label {
+  position: absolute; left: 20px; bottom: 16px; z-index: 2;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  letter-spacing: 0.03em; color: #f2efe8;
+}
+
+/* ============================================================
+   7 — Location: map + coordinates + nearby name/distance list
+   ============================================================ */
+.slide-location { display: grid; grid-template-columns: 71% 29%; background: var(--color-bg); height: 100%; }
+.slide-location .loc-map { position: relative; overflow: hidden; background: var(--color-surface-2); }
+.slide-location .loc-map iframe {
+  width: 100%; height: 100%; border: 0; display: block;
+  filter: grayscale(0.7) contrast(1.05) brightness(0.98);
+}
+/* justify-content:flex-start (not center) is deliberate: this column's
+   content (title + up to 10 "nearby" rows) varies a lot in height, and
+   center-justified content grows *upward* as well as down — with enough
+   nearby rows (a normal, encouraged amount of content, not an edge case)
+   the block's top edge crept up underneath .deck-actions (the fixed
+   Share/PDF buttons — see css around .deck-actions for the full story).
+   Anchoring to a fixed top padding instead means only the *bottom* of the
+   block moves as content grows, so the buttons' clearance holds
+   regardless of how much this listing's agent put in "Что рядом".
+
+   210px wasn't enough on its own, and no single fixed value fully can be:
+   .deck-actions is fixed to the real viewport while this padding is inside
+   the scaled stage, so their gap shrinks continuously as the fit() scale
+   shrinks — at *some* scale the two windows are mathematically guaranteed
+   to cross (proven by testing across scales, not just eyeballing one
+   window size). 300px pushes that crossing point down to scale ≈0.6,
+   clearing every ordinary desktop/laptop/landscape window (which sit
+   around 0.7-0.75); only unusually short/wide viewports below that are
+   still a (minor — it's just the small kicker label, not the title or
+   nearby list) residual risk. */
+.slide-location .loc-text {
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 20px;
+  padding: 300px 64px 60px;
+}
+.loc-coords {
+  font-family: var(--font-body); font-size: 14px; letter-spacing: 0.04em;
+  color: var(--color-text-muted); font-variant-numeric: tabular-nums;
+}
+.loc-nearby-list {
+  display: flex; flex-direction: column; gap: 12px; margin-top: 8px;
+  max-height: 460px; overflow-y: auto;
+}
+.loc-nearby-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding-top: 12px; border-top: 1px solid var(--color-border);
+}
+.loc-nearby-row:first-child { padding-top: 0; border-top: none; }
+.loc-nearby-row .lnr-name { font-family: var(--font-heading); font-size: 17px; color: var(--color-text); }
+.loc-nearby-row .lnr-dist {
+  font-family: var(--font-body); font-size: 11px; letter-spacing: 0.04em;
+  color: var(--color-text-muted); text-transform: uppercase; white-space: nowrap;
+}
+.loc-route {
+  align-self: flex-start; margin-top: 8px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  color: var(--color-accent-dark); text-decoration: none;
+  border-bottom: 1px solid var(--color-accent-dark); padding-bottom: 2px;
+}
+
+/* ============================================================
+   9 — Conditions: price + a quiet costs block
+   ============================================================ */
+.slide-conditions { background: var(--color-bg); }
+.cond-body { display: flex; gap: 120px; align-items: flex-start; margin-top: 40px; }
+.cond-price { display: flex; flex-direction: column; gap: 28px; }
+.cond-price-row { display: flex; flex-direction: column; gap: 4px; }
+.cond-price-row .cp-label { font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted); }
+.cond-price-row .cp-value { font-family: var(--font-heading); font-size: 68px; color: var(--color-text); line-height: 1; }
+.cond-price-row .cp-unit { font-size: 18px; color: var(--color-text-muted); margin-left: 10px; }
+.cond-costs { flex: none; width: 460px; border-top: 1px solid var(--color-text); padding-top: 22px; }
+.cond-costs .cc-title { font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 18px; }
+.cond-costs .cc-row {
+  display: flex; justify-content: space-between; padding: 12px 0;
+  border-bottom: 1px solid var(--color-border); font-size: 18px;
+}
+.cond-costs .cc-row .cc-val { color: var(--color-text); font-weight: 600; }
+
+/* ---------------- Rental-yield calculator (Conditions slide) ---------------- */
+.cond-calc { margin-top: 44px; padding-top: 32px; border-top: 1px solid var(--color-border); max-width: 1180px; }
+.cond-market { display: flex; align-items: baseline; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.cond-market .cm-label { font-size: 14px; color: var(--color-text-muted); }
+.cond-market .cm-value { font-size: 16px; font-weight: 700; color: var(--color-text); }
+.calc-box {
+  display: flex; align-items: flex-end; flex-wrap: wrap; gap: 40px 48px;
+  background: var(--color-surface); border-radius: var(--radius-md);
+  padding: 28px 36px;
+}
+.calc-inputs { display: flex; gap: 32px; flex: none; }
+.calc-field { display: flex; flex-direction: column; gap: 8px; }
+.calc-field-label { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+.calc-input-wrap {
+  display: flex; align-items: baseline; gap: 8px;
+  border-bottom: 1.5px solid var(--color-text); padding-bottom: 6px;
+}
+.calc-input-wrap input {
+  font: inherit; font-family: var(--font-heading); font-size: 30px; font-weight: 500;
+  width: 150px; border: 0; background: transparent; color: var(--color-text); padding: 0;
+}
+.calc-input-wrap input:focus-visible { outline: none; }
+.calc-input-wrap input::-webkit-outer-spin-button,
+.calc-input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.calc-unit { font-size: 14px; color: var(--color-text-muted); }
+/* Static stand-in for the calculator's <input> in the PDF (toggled by
+   prepSlideForPdf() in deck.js, alongside buildPdfDocument()) — the web
+   version stays live/editable, the PDF is a frozen snapshot. */
+.calc-print-value {
+  display: none;
+  font-family: var(--font-heading); font-size: 30px; font-weight: 500; color: var(--color-text);
+}
+.calc-expenses {
+  display: flex; flex-direction: column; gap: 8px; flex: none;
+  padding-left: 32px; border-left: 1px solid var(--color-border);
+}
+.calc-expenses-label { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+.calc-expenses-value { font-family: var(--font-heading); font-size: 20px; color: var(--color-text); }
+.calc-results { display: flex; align-items: flex-end; gap: 40px; margin-left: auto; }
+.calc-result { display: flex; flex-direction: column; gap: 6px; }
+.calc-result .cr-label { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+.calc-result .cr-value { font-family: var(--font-heading); font-size: 40px; color: var(--color-accent-dark); line-height: 1; font-variant-numeric: tabular-nums; }
+.calc-result-secondary .cr-value { font-size: 24px; color: var(--color-text-muted); }
+
+/* ============================================================
+   Final: evening photo (2/3) + agent contact bar (1/3)
+   ============================================================ */
+.slide-final { display: flex; flex-direction: column; height: 100%; }
+.cf-photo-area { position: relative; flex: 2 1 0; overflow: hidden; }
+.cf-phrase-wrap {
+  position: relative; z-index: 2; height: 100%;
+  display: flex; align-items: flex-end; padding: 80px 100px 56px;
+}
+
+.contact-bar {
+  flex: 1 1 0; background: var(--color-accent); color: #f2efe8;
+  display: flex; align-items: center; gap: 48px;
+  padding: 0 100px;
+}
+.cb-photo {
+  width: 300px; height: 300px; border-radius: 50%; flex: none;
+  position: relative; background: rgba(242, 239, 232, 0.14);
+}
+.cb-photo-mask { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; }
+.cb-photo-mask img { width: 100%; height: 100%; object-fit: cover; }
+.cb-photo .ph-label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: rgba(242, 239, 232, 0.65); text-align: center; padding: 0 20px;
+}
+.cb-info { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.cb-name { font-family: var(--font-heading); font-size: 32px; }
+.cb-phone { font-size: 19px; letter-spacing: 0.02em; }
+.cb-messengers { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.msg-pill {
+  display: inline-block;
+  border: 1.5px solid rgba(242, 239, 232, 0.4); background: transparent;
+  color: #f2efe8; font-family: var(--font-body); font-size: 12px; font-weight: 700;
+  padding: 7px 16px; border-radius: 999px; letter-spacing: 0.02em;
+}
+.msg-pill.active { background: #f2efe8; color: var(--color-accent-dark); border-color: #f2efe8; }
+.cb-qrs { display: flex; gap: 20px; flex: none; }
+.cb-qr {
+  width: 168px; height: 168px; flex: none;
+  background: rgba(242, 239, 232, 0.94);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  padding: 10px;
+}
+.cb-qr img { width: 100%; height: 100%; object-fit: contain; }
+.cb-qr .qr-label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-accent-dark); text-align: center; padding: 0 6px; }
+
+/* ---------------- Logo + company name (every slide, top-right) ---------------- */
+/* A dark translucent pill, same tone as .deck-nav, so it reads over any
+   slide background (photo or light cream) without per-slide color logic. */
+.global-logo {
+  position: absolute; top: 32px; right: 48px; z-index: 20;
+  display: flex; align-items: center; gap: 16px;
+  max-width: 480px;
+  padding: 12px 22px;
+  background: rgba(23, 22, 15, 0.68);
+  border-radius: 999px;
+}
+.global-logo img {
+  max-width: 190px; max-height: 68px; object-fit: contain; display: block;
+}
+.global-logo-name {
+  font-family: var(--font-heading); font-weight: 600; font-size: 22px;
+  color: #f2efe8; letter-spacing: 0.01em; white-space: nowrap;
+}
+
+/* ---------------- Nav chrome ---------------- */
+.deck-progress {
+  position: fixed; left: 0; top: 0; height: 2px; z-index: 50;
+  background: var(--color-accent);
+  transition: width 0.25s ease;
+}
+.deck-back {
+  position: fixed; left: 28px; top: 26px; z-index: 50;
+  appearance: none; border: 0; cursor: pointer; background: none;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.82);
+  padding: 6px 8px;
+}
+.deck-back:hover { color: #f2efe8; }
+/* Pushed down from the top edge (was top:26px): .global-logo (the agent's
+   own company name/logo badge — see js/deck.js) sits at top:32px;right:48px
+   *inside* the scaled stage, while these two buttons are fixed to the real
+   viewport. On any window whose aspect ratio is close to or wider than the
+   stage's own 16:9 (most ordinary desktop/laptop windows, and landscape
+   phones/tablets — see js/deck.js fit()), the stage fills the viewport's
+   full height with no letterboxing, so the scaled and real coordinate
+   systems nearly coincide there and the badge sits right under the
+   buttons. .global-logo's own height is capped (its name text is
+   white-space:nowrap, its logo image max-height:68px) regardless of how
+   long the company name or logo shape is: worst case (a real uploaded
+   logo image, at its max-height) it's 32+12+68+12=124px tall at scale 1
+   — which js/deck.js fit() now caps the stage at (never upscales past its
+   native 1920x1080), so 145px clearance covers every case, forever, not
+   just "the window sizes tested." Bottom-right was tried instead and
+   rejected — it collides with the QR codes on the final contact slide, a
+   worse conflict than this one. */
+.deck-actions { position: fixed; right: 28px; top: 145px; z-index: 50; display: flex; gap: 10px; }
+.deck-action-btn {
+  appearance: none; cursor: pointer;
+  background: rgba(23, 22, 15, 0.68); border: 1px solid rgba(242, 239, 232, 0.3); border-radius: 999px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.92);
+  padding: 8px 18px;
+}
+.deck-action-btn:hover { color: #fff; border-color: rgba(242, 239, 232, 0.6); }
+.deck-action-btn:disabled { opacity: 0.6; cursor: default; }
+
+.deck-nav {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  z-index: 50;
+  display: flex; align-items: center; gap: 22px;
+  padding: 10px 20px;
+  background: rgba(23, 22, 15, 0.82);
+}
+.deck-count {
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em; color: #f2efe8; font-variant-numeric: tabular-nums;
+}
+.deck-label {
+  font-size: 13px; color: rgba(242, 239, 232, 0.6);
+  max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: none;
+}
+@media (min-width: 760px) { .deck-label { display: block; } }
+.deck-nav-arrows { display: flex; gap: 4px; }
+.deck-nav-arrows button {
+  appearance: none; border: 0; cursor: pointer; background: none;
+  width: 30px; height: 30px; font-size: 16px;
+  color: #f2efe8;
+}
+.deck-nav-arrows button:disabled { opacity: 0.3; cursor: not-allowed; }
+.deck-nav-arrows button:hover:not(:disabled) { color: var(--color-accent-light, #cbb79a); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ---------------- Small-stage type scale ---------------- */
+/* The stage is always scaled uniformly (see js/deck.js fit()), so
+   typography never needs its own breakpoints — it scales with the
+   canvas and reads identically on a phone and a wide display. */
+
+/* ---------------- "Скачать PDF" export ---------------- */
+/* Rendered via html2canvas + jsPDF (buildPdfDocument() in deck.js), not
+   window.print() — see the comment there for why. The one thing this
+   costs: the Location slide's map is a cross-origin OpenStreetMap iframe,
+   which no canvas-based capture can read into. prepSlideForPdf() swaps it
+   for a same-origin Google Static Maps image (server.js /api/static-map)
+   for just that slide's capture, then puts the live map back — or, if no
+   Google Maps API key is configured server-side, falls back to this plain
+   text panel instead. */
+.loc-map-pdf-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  filter: grayscale(0.7) contrast(1.05) brightness(0.98);
+}
+.loc-map-pdf-fallback {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 60px; text-align: center;
+  background: var(--color-surface-2);
+  font-family: var(--font-body); font-size: 18px; color: var(--color-text-muted);
+}

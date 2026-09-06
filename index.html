@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Быстросайт — конструктор презентаций недвижимости</title>
+<!-- Every asset below is referenced with a relative path (css/..., js/...,
+     assets/...). That resolved fine while every route was one path segment
+     deep (/, /new-listing, /preview, /pricing) — /p/<id> is two segments
+     deep, so without this <base>, js/app.js would resolve against
+     /p/<id>/js/app.js and 404. <base href="/"> pins every relative URL in
+     the document to the site root regardless of how deep the current route is. -->
+<base href="/">
+
+<!-- Open Graph / messenger link previews (WhatsApp, Telegram, Facebook ads,
+     etc.). Static site, no server-side rendering: these always describe the
+     Быстросайт product itself (the tool), not a specific agent's listing —
+     a shared /preview link can't carry its own og:image/og:title without a
+     backend. Deliberately does NOT read like a real property listing (title/
+     price/description of a villa) — a cold link preview with no other
+     context read exactly like one before, which misled agents into thinking
+     Быстросайт was offering them a specific villa rather than a tool that
+     builds presentations like this one. og:image now has a baked-in
+     "ПРИМЕР" badge for the same reason (see assets/stock/og-cover.jpg — a
+     screenshot-composited variant of cover.jpg, not a design-tool export).
+     og:image/og:url are absolute (bots generally require this, and a
+     relative one is exactly what let Telegram/Facebook's crawlers cache a
+     broken or stale preview instead of ever fetching the real image).
+     Currently pinned to the onrender.com domain — update these three if the
+     site ever moves to its own domain, same as oferta.html's "Сайт
+     Исполнителя" definition. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Быстросайт">
+<meta property="og:title" content="Быстросайт — конструктор презентаций для риелторов">
+<meta property="og:description" content="Заполните карточку объекта — получите готовую презентацию с картой, фото и контактами агента за минуты. Первая презентация бесплатно.">
+<meta property="og:image" content="https://bystrosite.onrender.com/assets/stock/og-cover.jpg">
+<meta property="og:url" content="https://bystrosite.onrender.com/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Быстросайт — конструктор презентаций для риелторов">
+<meta name="twitter:description" content="Заполните карточку объекта — получите готовую презентацию с картой, фото и контактами агента за минуты. Первая презентация бесплатно.">
+<meta name="twitter:image" content="https://bystrosite.onrender.com/assets/stock/og-cover.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/deck.css">
+</head>
+<body>
+
+<!-- ARTIFACT:BODY:START -->
+<div id="app">
+
+  <!-- ===================== VIEW: LANDING (/) ===================== -->
+  <div class="view" id="view-landing">
+    <header class="app-header">
+      <a href="/" class="app-brand" data-nav>
+        <span class="app-brand-mark"></span>
+        <span class="app-brand-name" data-i18n="appBrandName">Быстросайт</span>
+      </a>
+      <div class="app-header-right">
+        <span class="app-brand-tag" data-i18n="appBrandTag">Конструктор презентаций объектов недвижимости</span>
+        <div class="lang-switch" id="langSwitch" role="group" aria-label="Язык / Language">
+          <button type="button" class="lang-btn" data-lang="ru">RU</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="landing-shell">
+      <div class="landing-intro">
+        <span class="landing-badge" data-i18n="landingBadge">Первая презентация — бесплатно</span>
+        <h1 data-i18n="landingTitle">Премиальная интерактивная презентация с живой картой и калькулятором доходности</h1>
+        <p data-i18n="landingSubtitle">Заполните карточку объекта — получите готовую презентацию в архитектурно-издательском стиле: интерактивная карта локации, калькулятор доходности от аренды, QR-коды для связи. Слайд за слайдом, как в примере ниже.</p>
+      </div>
+
+      <div class="landing-thumbs" id="landingThumbs"><!-- thumbnails injected by js/deck.js --></div>
+
+      <div class="landing-cta">
+        <a href="/new-listing" class="btn btn-primary btn-lg" data-nav data-i18n="landingCta">Создать свою презентацию →</a>
+      </div>
+    </div>
+
+    <footer class="app-footer">
+      <p data-i18n="footerCopyright">© Быстросайт. Все права защищены.</p>
+      <p data-i18n="footerLegalInfo">Самозанятый Соломинова Анна Викторовна · ИНН 027600146568</p>
+      <p><a href="/privacy" data-i18n="footerPrivacyLink">Политика обработки персональных данных</a></p>
+      <p><a href="/oferta" data-i18n="footerOfertaLink">Публичная оферта</a></p>
+      <p><a href="/pricing" data-nav data-i18n="footerPricingLink">Тарифы</a></p>
+    </footer>
+  </div>
+
+  <!-- ===================== VIEW: FORM (/new-listing) ===================== -->
+  <div class="view" id="view-form" hidden>
+    <header class="app-header">
+      <a href="/new-listing" class="app-brand" data-nav>
+        <span class="app-brand-mark"></span>
+        <span class="app-brand-name" data-i18n="appBrandName">Быстросайт</span>
+      </a>
+      <div class="app-header-right">
+        <span class="app-brand-tag" data-i18n="appBrandTag">Конструктор презентаций объектов недвижимости</span>
+        <div class="lang-switch" role="group" aria-label="Язык / Language">
+          <button type="button" class="lang-btn" data-lang="ru">RU</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="form-shell">
+      <div class="form-intro">
+        <h1 data-i18n="formTitle">Новый объект</h1>
+        <p data-i18n="formIntro">Заполните карточку объекта — мы соберём из неё готовую презентацию в стиле премиального шаблона. Поля уже заполнены примером, можно сразу нажать «Создать презентацию» и посмотреть результат.</p>
+      </div>
+
+      <div class="form-error-banner" id="formError" data-i18n="formErrorBanner">Проверьте отмеченные поля — часть обязательных данных не заполнена.</div>
+
+      <form id="listingForm" novalidate>
+
+        <section class="field-group">
+          <h2 data-i18n="secTypeTitle">Тип объекта</h2>
+          <p class="field-group-hint" data-i18n="secTypeHint">Определяет, какие поля характеристик показывать ниже, и нужен ли слайд бассейна/двора</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="fPropertyType" data-i18n="fPropertyTypeLabel">Тип</label>
+              <select id="fPropertyType">
+                <option value="villa" selected data-i18n="optVilla">Вилла</option>
+                <option value="house" data-i18n="optHouse">Дом</option>
+                <option value="apartment" data-i18n="optApartment">Кондо</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secAboutTitle">Об объекте</h2>
+          <p class="field-group-hint" data-i18n="secAboutHint">Название и свободное описание для карточки и обложки презентации</p>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fTitle" data-i18n="fTitleLabel">Название объекта *</label>
+              <input type="text" id="fTitle" required data-i18n-placeholder="fTitlePh" placeholder="Villa Aurora">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fDescription" data-i18n="fDescriptionLabel">Описание</label>
+              <textarea id="fDescription" rows="4" data-i18n-placeholder="fDescriptionPh" placeholder="Одноэтажная вилла с приватным бассейном в закрытом посёлке в 7 минутах от пляжа Раваи. Полностью меблирована, панорамное остекление гостиной, тропический сад по периметру участка."></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secPhrasesTitle">Текстовые акценты</h2>
+          <p class="field-group-hint" data-i18n="secPhrasesHint">Короткие фразы поверх фото — необязательно. Если оставить пустым, слайд останется просто с фото, без подписи</p>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fEmotionPhrase" data-i18n="fEmotionPhraseLabel">Фраза на слайде «Эмоция»</label>
+              <input type="text" id="fEmotionPhrase" placeholder="напр. Тишина, свет и вода" data-i18n-placeholder="fEmotionPhrasePh" maxlength="120">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fClosingPhrase" data-i18n="fClosingPhraseLabel">Фраза на контактном слайде</label>
+              <input type="text" id="fClosingPhrase" placeholder="напр. Резиденция ждёт своего часа" data-i18n-placeholder="fClosingPhrasePh" maxlength="120">
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secLocationTitle">Локация</h2>
+          <p class="field-group-hint" data-i18n="secLocationHint">Адрес и координаты — по ним построим карту на слайде локации</p>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fLocationName" data-i18n="fLocationNameLabel">Локация *</label>
+              <input type="text" id="fLocationName" required placeholder="напр. Раваи, Пхукет, Таиланд" data-i18n-placeholder="fLocationNamePh">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fCoordsPaste" data-i18n="fCoordsPasteLabel">Вставить координаты из Google Maps</label>
+              <input type="text" id="fCoordsPaste" placeholder="напр. 7.7654321, 98.3086543" data-i18n-placeholder="fCoordsPastePh">
+              <span class="field-note" data-i18n="fCoordsPasteHint">В Google Maps: долгое нажатие на точку на карте → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="fLat" data-i18n="fLatLabel">Широта (lat) *</label>
+              <input type="number" id="fLat" step="any" required placeholder="7.7654">
+            </div>
+            <div class="field">
+              <label for="fLng" data-i18n="fLngLabel">Долгота (lng) *</label>
+              <input type="number" id="fLng" step="any" required placeholder="98.3086">
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secPriceTitle">Цена</h2>
+          <p class="field-group-hint" data-i18n="secPriceHint">Укажите продажу, аренду или оба варианта — хотя бы одно поле обязательно</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="fCurrency" data-i18n="fCurrencyLabel">Валюта</label>
+              <select id="fCurrency">
+                <option value="THB" selected>THB</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="RUB">RUB</option>
+                <option value="AED">AED</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fSalePrice" data-i18n="fSalePriceLabel">Цена продажи</label>
+              <input type="number" id="fSalePrice" min="0" value="12500000">
+            </div>
+            <div class="field">
+              <label for="fRentPrice" data-i18n="fRentPriceLabel">Цена аренды</label>
+              <input type="number" id="fRentPrice" min="0" value="95000">
+            </div>
+            <div class="field">
+              <label for="fRentPeriod" data-i18n="fRentPeriodLabel">Период аренды</label>
+              <select id="fRentPeriod">
+                <option value="month" selected data-i18n="optPerMonth">/мес.</option>
+                <option value="day" data-i18n="optPerDay">/сутки</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fRentMarketRange" data-i18n="fRentMarketRangeLabel">Рыночная вилка аренды по годовому контракту в районе</label>
+              <input type="text" id="fRentMarketRange" placeholder="напр. 80 000 – 110 000 THB / мес." data-i18n-placeholder="fRentMarketRangePh" maxlength="80">
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secParamsTitle">Параметры объекта</h2>
+          <div class="field-row">
+            <div class="field">
+              <label for="fHouseArea" data-i18n="fHouseAreaLabel">Площадь дома, м² *</label>
+              <input type="number" id="fHouseArea" min="0" required value="260">
+            </div>
+            <div class="field">
+              <label for="fPlotArea" data-i18n="fPlotAreaLabel">Площадь участка, м²</label>
+              <input type="number" id="fPlotArea" min="0" value="420">
+            </div>
+            <div class="field">
+              <label for="fBedrooms" data-i18n="fBedroomsLabel">Спальни *</label>
+              <input type="number" id="fBedrooms" min="0" required value="4">
+            </div>
+            <div class="field">
+              <label for="fBathrooms" data-i18n="fBathroomsLabel">Ванные *</label>
+              <input type="number" id="fBathrooms" min="0" required value="3">
+            </div>
+            <div class="field field-villa">
+              <label for="fPoolSize" data-i18n="fPoolSizeLabel">Размер бассейна</label>
+              <input type="text" id="fPoolSize" placeholder="напр. 3 × 7 м" data-i18n-placeholder="fPoolSizePh">
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secFeaturesTitle">Характеристики и удобства</h2>
+          <p class="field-group-hint" data-i18n="secFeaturesHint">Всё необязательно — появится на слайде «Пространство для жизни», если заполнено. Набор полей зависит от типа объекта</p>
+          <div class="field-row">
+            <div class="field field-villa">
+              <label for="fYard" data-i18n="fYardLabel">Двор</label>
+              <input type="text" id="fYard" placeholder="напр. огороженный, с газоном" data-i18n-placeholder="fYardPh">
+            </div>
+            <div class="field field-villa">
+              <label for="fFloors" data-i18n="fFloorsLabel">Этажность</label>
+              <input type="number" id="fFloors" min="0" value="2">
+            </div>
+            <div class="field field-apartment" hidden>
+              <label for="fFloorNumber" data-i18n="fFloorNumberLabel">Этаж</label>
+              <input type="number" id="fFloorNumber" min="0" value="5">
+            </div>
+            <div class="field">
+              <label for="fFurnished" data-i18n="fFurnishedLabel">Мебель</label>
+              <select id="fFurnished">
+                <option value="" data-i18n="optFurnishedNone">Не указано</option>
+                <option value="full" selected data-i18n="optFurnishedFull">Полностью меблирована</option>
+                <option value="partial" data-i18n="optFurnishedPartial">Частично меблирована</option>
+                <option value="none" data-i18n="optFurnishedEmpty">Без мебели</option>
+              </select>
+            </div>
+            <div class="field field-villa">
+              <label for="fGarageSpaces" data-i18n="fGarageSpacesLabel">Гараж, машиномест</label>
+              <input type="number" id="fGarageSpaces" min="0" value="2">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field field-checkbox">
+              <label class="checkbox-label"><input type="checkbox" id="fSecurity" checked> <span data-i18n="fSecurityLabel">Круглосуточная охрана</span></label>
+            </div>
+            <div class="field field-checkbox field-villa">
+              <label class="checkbox-label"><input type="checkbox" id="fAutoGate" checked> <span data-i18n="fAutoGateLabel">Автоматические ворота</span></label>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fExtraFeatures" data-i18n="fExtraFeaturesLabel">Дополнительные преимущества</label>
+              <textarea id="fExtraFeatures" rows="3" placeholder="напр. видовая терраса, смарт-дом, мебель premium-класса" data-i18n-placeholder="fExtraFeaturesPh"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secNearbyTitle">Что рядом</h2>
+          <p class="field-group-hint" data-i18n="secNearbyHint">Необязательно. По одному месту на строке — «Название — время или расстояние». Используется на слайдах «Локация» и «Что рядом»</p>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fNearby" data-i18n="fNearbyLabel">Места рядом</label>
+              <textarea id="fNearby" rows="6" data-i18n-placeholder="fNearbyPh" placeholder="Пляж Раваи — 7 минут
+Мыс Промтеп — 10 минут
+Международная школа — 12 минут
+Супермаркет Villa Market — 5 минут
+Йога-шала — 3 минуты
+Аэропорт Пхукета — 40 минут"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secMgmtTitle">Управление и расходы</h2>
+          <p class="field-group-hint" data-i18n="secMgmtHint">Необязательно — появится на слайде «Ежемесячные расходы», если заполнено</p>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fManagementCompany" data-i18n="fManagementCompanyLabel">Управляющая компания</label>
+              <input type="text" id="fManagementCompany" value="Aurora Estate Management">
+            </div>
+            <div class="field">
+              <label for="fCamFee" data-i18n="fCamFeeLabel">CAM fee (в месяц)</label>
+              <input type="number" id="fCamFee" min="0" value="5500">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="fCleaningFee" data-i18n="fCleaningFeeLabel">Клининг</label>
+              <input type="number" id="fCleaningFee" min="0" value="800">
+            </div>
+            <div class="field">
+              <label for="fCleaningPeriod" data-i18n="fCleaningPeriodLabel">Периодичность клининга</label>
+              <select id="fCleaningPeriod">
+                <option value="week" selected data-i18n="optPerWeek">/нед.</option>
+                <option value="month" data-i18n="optPerMonth">/мес.</option>
+                <option value="year" data-i18n="optPerYear">/год</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fPoolMaintenanceFee" data-i18n="fPoolMaintenanceFeeLabel">Обслуживание бассейна (в месяц)</label>
+              <input type="number" id="fPoolMaintenanceFee" min="0" value="3000">
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secPhotosTitle">Фотографии</h2>
+          <p class="field-group-hint" data-i18n="secPhotosHint">Каждый слот соответствует конкретному месту в презентации — кликните по слоту, чтобы загрузить нужный кадр. Список спален и ванных пересчитывается по полям «Параметры объекта» выше. Можно оставить пустым — слайды покажут плейсхолдеры</p>
+          <div class="field field-checkbox">
+            <label class="checkbox-label"><input type="checkbox" id="fColorGrade" checked> <span data-i18n="fColorGradeLabel">Применить цветокоррекцию</span></label>
+          </div>
+          <p class="field-group-hint" data-i18n="fColorGradeHint">Плёночный вид: приглушённые тона, тёплый баланс белого, мягкая виньетка и лёгкая рельефность текстур — применяется автоматически к каждому загруженному фото</p>
+          <div class="photo-slots" id="photoSlots"><!-- slot tiles injected by js/app.js --></div>
+          <p class="photo-add-count" id="photoCount"></p>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secLogoTitle">Логотип и название агентства</h2>
+          <p class="field-group-hint" data-i18n="secLogoHint">Необязательно — оба элемента вместе появятся в правом верхнем углу каждого слайда презентации</p>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fCompanyName" data-i18n="fCompanyNameLabel">Название компании/агентства</label>
+              <input type="text" id="fCompanyName" placeholder="напр. Aurora Estate Realty" data-i18n-placeholder="fCompanyNamePh" maxlength="60">
+            </div>
+          </div>
+          <div class="logo-uploader">
+            <div class="logo-preview" id="logoPreview"><span data-i18n="logoNoLogo">Нет логотипа</span></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="logoAddBtn" data-i18n="logoAddBtn">Загрузить логотип</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="logoRemoveBtn" hidden data-i18n="logoRemoveBtn">Удалить</button>
+          </div>
+          <input type="file" id="logoInput" accept="image/png,image/jpeg" hidden>
+        </section>
+
+        <section class="field-group">
+          <h2 data-i18n="secAgentTitle">Контакты агента</h2>
+          <p class="field-group-hint" data-i18n="secAgentHint">Появятся на последнем слайде презентации — контактной карточке для клиента</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="fAgentName" data-i18n="fAgentNameLabel">Имя агента</label>
+              <input type="text" id="fAgentName" maxlength="60" placeholder="напр. Анна Соломинова" data-i18n-placeholder="fAgentNamePh">
+            </div>
+            <div class="field">
+              <label for="fAgentPhone" data-i18n="fAgentPhoneLabel">Телефон *</label>
+              <input type="text" id="fAgentPhone" maxlength="40" required placeholder="+7 900 000-00-00" data-i18n-placeholder="fAgentPhonePh">
+              <span class="field-inline-error" id="fAgentPhoneError" data-i18n="fAgentPhoneError">Пожалуйста, заполните номер телефона</span>
+            </div>
+          </div>
+          <div class="logo-uploader">
+            <div class="logo-preview logo-preview-round" id="agentPhotoPreview"><span data-i18n="agentPhotoNone">Нет фото</span></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="agentPhotoAddBtn" data-i18n="agentPhotoAddBtn">Загрузить фото</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="agentPhotoRemoveBtn" hidden data-i18n="logoRemoveBtn">Удалить</button>
+          </div>
+          <input type="file" id="fAgentPhotoInput" accept="image/*" hidden>
+
+          <div class="field" style="margin-top: 22px">
+            <label data-i18n="fAgentMessengersLabel">Мессенджеры на карточке (не более двух)</label>
+            <div class="messenger-check-row">
+              <label class="checkbox-label"><input type="checkbox" id="fMsgWhatsapp" data-msg="whatsapp" checked> WhatsApp</label>
+              <label class="checkbox-label"><input type="checkbox" id="fMsgTelegram" data-msg="telegram" checked> Telegram</label>
+              <label class="checkbox-label"><input type="checkbox" id="fMsgLine" data-msg="line"> Line</label>
+            </div>
+          </div>
+          <div class="qr-uploaders" id="qrUploaders"><!-- QR upload tiles injected by js/app.js --></div>
+        </section>
+
+        <div class="field field-checkbox consent-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="fConsent" disabled>
+            <span><span data-i18n="fConsentLabelPrefix">Я согласен с </span><a href="/privacy" target="_blank" rel="noopener" id="fConsentPolicyLink" data-i18n="fConsentPolicyLink">политикой обработки персональных данных</a></span>
+          </label>
+          <span class="field-note" id="fConsentHint" data-i18n="fConsentHint">Чтобы поставить галочку, откройте и дочитайте политику до конца</span>
+          <span class="field-inline-error" id="fConsentError" data-i18n="fConsentError">Чтобы продолжить, подтвердите согласие с политикой обработки персональных данных</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn" data-i18n="submitBtn">Создать презентацию →</button>
+        </div>
+      </form>
+    </div>
+
+    <footer class="app-footer">
+      <p data-i18n="footerCopyright">© Быстросайт. Все права защищены.</p>
+      <p data-i18n="footerLegalInfo">Самозанятый Соломинова Анна Викторовна · ИНН 027600146568</p>
+      <p><a href="/privacy" data-i18n="footerPrivacyLink">Политика обработки персональных данных</a></p>
+      <p><a href="/oferta" data-i18n="footerOfertaLink">Публичная оферта</a></p>
+      <p><a href="/pricing" data-nav data-i18n="footerPricingLink">Тарифы</a></p>
+    </footer>
+  </div>
+
+  <!-- ===================== VIEW: PREVIEW (/preview) ===================== -->
+  <div class="view" id="view-preview" hidden>
+    <!-- No data-nav here on purpose — js/app.js wires its own click handler
+         so it can check finalize/edit access first (see requestEditAccess)
+         before navigating back to the form. -->
+    <button type="button" class="deck-back" id="deckBack" data-i18n="deckBackBtn">← Редактировать</button>
+    <div class="deck-actions">
+      <button type="button" class="deck-action-btn" id="deckShareBtn" data-i18n="deckShareBtn">Поделиться</button>
+      <button type="button" class="deck-action-btn" id="deckPdfBtn" data-i18n="deckPdfBtn">Скачать PDF</button>
+    </div>
+    <div class="deck-progress" id="deckProgress"></div>
+    <div class="stage-outer" id="stageOuter">
+      <div class="stage" id="stage"><!-- slides injected by js/deck.js --></div>
+    </div>
+    <nav class="deck-nav" aria-label="Навигация по слайдам" data-i18n-aria="deckNavAria">
+      <span class="deck-count" id="deckCount">01 / 10</span>
+      <span class="deck-label" id="deckLabel"></span>
+      <span class="deck-nav-arrows">
+        <button type="button" id="btnPrev" aria-label="Предыдущий слайд" data-i18n-aria="deckPrevAria">←</button>
+        <button type="button" id="btnNext" aria-label="Следующий слайд" data-i18n-aria="deckNextAria">→</button>
+      </span>
+    </nav>
+    <div class="sr-only" aria-live="polite" id="deckAnnounce"></div>
+  </div>
+
+  <!-- ===================== VIEW: PRICING (/pricing) ===================== -->
+  <!-- Reached from the finalize-lock modal ("Перейти к оплате") when a
+       listing is already finalized and its phone has no credit or active
+       subscription to reopen/re-finalize it — see requestFinalize /
+       requestEditAccess in js/app.js. -->
+  <div class="view" id="view-pricing" hidden>
+    <header class="app-header">
+      <a href="/" class="app-brand" data-nav>
+        <span class="app-brand-mark"></span>
+        <span class="app-brand-name" data-i18n="appBrandName">Быстросайт</span>
+      </a>
+    </header>
+    <div class="pricing-shell">
+      <h1 data-i18n="pricingTitle">Тарифы</h1>
+      <p data-i18n="pricingIntro">Первая презентация с этим номером телефона уже была создана бесплатно. Чтобы создать следующую, выберите тариф.</p>
+      <p class="pricing-credits-note" data-i18n="pricingCreditsNote">Презентации из пакета не сгорают — они закрепляются за вашим номером телефона и остаются доступны в любое время, использовать сразу все не обязательно.</p>
+      <div class="pricing-cards">
+        <div class="pricing-card">
+          <div class="pricing-card-title" data-i18n="pricingSingleTitle">Разовая</div>
+          <div class="pricing-card-price">250 ₽</div>
+          <ul class="pricing-card-features">
+            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
+            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
+            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
+            <li data-i18n="pricingFeatureWatermarkOn">Водяной знак «Быстросайт»</li>
+          </ul>
+          <button type="button" class="btn btn-ghost pricing-card-pay" data-plan-key="single" data-plan-name="Разовая" data-plan-price="250 ₽" data-i18n="pricingPayBtn">Оплатить</button>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-card-title" data-i18n="pricingPack5Title">5 презентаций</div>
+          <div class="pricing-card-price">1000 ₽</div>
+          <ul class="pricing-card-features">
+            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
+            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
+            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
+            <li data-i18n="pricingFeatureWatermarkOff">Без водяного знака</li>
+          </ul>
+          <button type="button" class="btn btn-ghost pricing-card-pay" data-plan-key="pack5" data-plan-name="5 презентаций" data-plan-price="1000 ₽" data-i18n="pricingPayBtn">Оплатить</button>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-card-title" data-i18n="pricingPackTitle">20 презентаций</div>
+          <div class="pricing-card-price">3000 ₽</div>
+          <ul class="pricing-card-features">
+            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
+            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
+            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
+            <li data-i18n="pricingFeatureWatermarkOff">Без водяного знака</li>
+          </ul>
+          <button type="button" class="btn btn-ghost pricing-card-pay" data-plan-key="pack20" data-plan-name="20 презентаций" data-plan-price="3000 ₽" data-i18n="pricingPayBtn">Оплатить</button>
+        </div>
+        <div class="pricing-card pricing-card-featured">
+          <div class="pricing-card-title" data-i18n="pricingUnlimitedTitle">Безлимит</div>
+          <div class="pricing-card-price">10000 ₽<span class="pricing-card-period" data-i18n="pricingPerMonth">/мес</span></div>
+          <ul class="pricing-card-features">
+            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
+            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
+            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
+            <li data-i18n="pricingFeatureWatermarkOff">Без водяного знака</li>
+          </ul>
+          <button type="button" class="btn btn-primary pricing-card-pay" data-plan-key="unlimited" data-plan-name="Безлимит" data-plan-price="10000 ₽/мес" data-i18n="pricingPayBtn">Оплатить</button>
+        </div>
+      </div>
+
+      <!-- Payment panel: revealed on "Оплатить". Redirects to a real payform.ru
+           (Prodamus) checkout link built server-side for the chosen plan +
+           phone (POST /api/pricing/pay) — payform's own webhook credits the
+           agent automatically once paid, see processProdamusPayment in
+           server.js. See js/app.js wirePricingPayment() for the wiring. -->
+      <div class="pricing-payment" id="pricingPayment" hidden>
+        <button type="button" class="pricing-payment-close" id="pricingPaymentClose" data-i18n="pricingPaymentClose">← Назад к тарифам</button>
+        <h2 class="pricing-payment-plan" id="pricingPaymentPlan"></h2>
+        <p class="pricing-payment-delay" data-i18n="pricingActivationDelay">Доступ откроется автоматически сразу после оплаты</p>
+        <div class="field pricing-pay-phone-row">
+          <label for="pricingPayPhone" data-i18n="pricingPayPhoneLabel">Номер телефона (на него будет привязан доступ)</label>
+          <input type="tel" id="pricingPayPhone" data-i18n-placeholder="fAgentPhonePh" placeholder="+7 900 000-00-00">
+          <span class="field-inline-error" id="pricingPayPhoneError" data-i18n="pricingPayPhoneError">Укажите номер телефона</span>
+        </div>
+        <div class="field field-checkbox consent-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="pricingConsent" disabled>
+            <span><span data-i18n="pricingConsentLabelPrefix">Я согласен с </span><a href="/payment-consent" target="_blank" rel="noopener" id="pricingConsentLink" data-i18n="pricingConsentLink">согласием на обработку персональных данных и передачу третьим лицам</a></span>
+          </label>
+          <span class="field-note" id="pricingConsentHint" data-i18n="pricingConsentHint">Чтобы поставить галочку, откройте и дочитайте согласие до конца</span>
+          <span class="field-inline-error" id="pricingConsentError" data-i18n="pricingConsentError">Чтобы продолжить, подтвердите согласие на обработку персональных данных</span>
+        </div>
+        <button type="button" class="btn btn-primary pricing-pay-go" id="pricingPayGo" data-i18n="pricingPayGoBtn">Перейти к оплате →</button>
+        <p class="pricing-pay-error" id="pricingPayError" hidden data-i18n="pricingPayError">Не удалось создать ссылку на оплату. Попробуйте ещё раз или напишите нам.</p>
+        <div class="pricing-help-block">
+          <a class="pricing-help-link btn btn-ghost" href="https://t.me/proff_broker" target="_blank" rel="noopener" data-i18n="pricingTimerLink">Написать в Telegram: @proff_broker →</a>
+        </div>
+      </div>
+
+      <a href="/new-listing" class="btn btn-ghost" data-nav data-i18n="pricingBack">← Назад к форме</a>
+    </div>
+
+    <footer class="app-footer">
+      <p data-i18n="footerCopyright">© Быстросайт. Все права защищены.</p>
+      <p data-i18n="footerLegalInfo">Самозанятый Соломинова Анна Викторовна · ИНН 027600146568</p>
+      <p><a href="/privacy" data-i18n="footerPrivacyLink">Политика обработки персональных данных</a></p>
+      <p><a href="/oferta" data-i18n="footerOfertaLink">Публичная оферта</a></p>
+      <p><a href="/pricing" data-nav data-i18n="footerPricingLink">Тарифы</a></p>
+    </footer>
+  </div>
+
+  <!-- ===================== Finalize / edit-lock modal ===================== -->
+  <!-- Shared by every finalize/edit-access check in js/app.js (requestFinalize,
+       requestEditAccess) — a generic message + 1-2 buttons, not tied to any
+       one view, so it stays on top and reachable regardless of which .view
+       is currently shown. -->
+  <div class="modal-overlay" id="finalizeModal" hidden>
+    <div class="modal-box" role="alertdialog" aria-modal="true">
+      <p class="modal-message" id="finalizeModalMessage"></p>
+      <div class="modal-actions" id="finalizeModalActions"></div>
+    </div>
+  </div>
+
+  <!-- ===================== Edit-access gate (/edit/<id>) ===================== -->
+  <!-- The agent-only entry point for editing an already-saved listing (see
+       js/app.js editListingId()/renderRoute()). Public /p/<id> links never
+       show this — and never show the "← Редактировать" button at all, see
+       showPreview(allowEdit). Reaching the edit form for an existing
+       listing on a fresh browser/session requires typing the exact phone
+       number it was created with, verified server-side (POST
+       /api/listings/:id/edit-auth) — not just clicking a button. -->
+  <div class="modal-overlay" id="editGateModal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true">
+      <p class="modal-message" data-i18n="editGateMessage">Чтобы редактировать эту презентацию, подтвердите номер телефона агента, указанный при её создании.</p>
+      <div class="field">
+        <label for="editGatePhone" data-i18n="editGatePhoneLabel">Номер телефона</label>
+        <input type="tel" id="editGatePhone" data-i18n-placeholder="fAgentPhonePh" placeholder="+7 900 000-00-00">
+        <span class="field-inline-error" id="editGatePhoneError" data-i18n="editGateError">Неверный номер телефона. Попробуйте ещё раз.</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="editGateSubmit" data-i18n="editGateSubmitBtn">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Privacy policy "read to the end" modal ===================== -->
+  <!-- The consent checkbox (fConsent, "Об объекте" form → consent-row) stays
+       disabled until this has been scrolled to its end at least once — see
+       wirePolicyModal() in js/app.js. Loads privacy.html itself in an iframe
+       (same origin, so its scroll position is readable) rather than
+       duplicating the policy text here, so there's exactly one copy of it. -->
+  <div class="modal-overlay" id="policyModal" hidden>
+    <div class="modal-box policy-modal-box" role="dialog" aria-modal="true">
+      <div class="policy-modal-frame-wrap">
+        <iframe id="policyFrame" src="/privacy" title="Политика обработки персональных данных"></iframe>
+      </div>
+      <p class="policy-modal-hint" id="policyModalHint" data-i18n="policyModalHint">Долистайте текст до конца, чтобы согласиться</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="policyModalClose" data-i18n="policyModalClose">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Payment consent "read to the end" modal ===================== -->
+  <!-- Same pattern as policyModal above, for pricingConsent (/pricing payment
+       panel) — gates the checkbox on scrolling payment-consent.html, loaded
+       here in its own iframe, to its end. See wireReadToEndConsent() in
+       js/app.js, which both this and policyModal are built from. -->
+  <div class="modal-overlay" id="pricingConsentModal" hidden>
+    <div class="modal-box policy-modal-box" role="dialog" aria-modal="true">
+      <div class="policy-modal-frame-wrap">
+        <iframe id="pricingConsentFrame" src="/payment-consent" title="Согласие на обработку персональных данных"></iframe>
+      </div>
+      <p class="policy-modal-hint" id="pricingConsentModalHint" data-i18n="pricingConsentModalHint">Долистайте текст до конца, чтобы согласиться</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="pricingConsentModalClose" data-i18n="pricingConsentModalClose">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- ARTIFACT:BODY:END -->
+
+<!-- PDF export (js/deck.js generatePdf): html2canvas rasterizes each slide,
+     jsPDF assembles the JPEGs into pages. Deliberately not window.print() —
+     Chrome's native print-to-PDF re-rasterizes photos losslessly regardless
+     of source size, producing 40-60MB+ files for a photo-heavy deck; this
+     way the JPEG compression is ours to control. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="js/i18n.js" defer></script>
+<script src="js/colorgrade.js" defer></script>
+<script src="js/slots.js" defer></script>
+<script src="js/deck.js" defer></script>
+<script src="js/supabase-config.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "bystrosite",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Быстросайт — конструктор презентаций недвижимости",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node scripts/build.js",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "cssnano": "^9.0.1",
+    "postcss": "^8.5.26",
+    "terser": "^5.51.2"
+  }
+}
