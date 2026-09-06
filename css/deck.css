@@ -549,12 +549,12 @@
 /* ---------------- "Скачать PDF" export ---------------- */
 /* Rendered via html2canvas + jsPDF (buildPdfDocument() in deck.js), not
    window.print() — see the comment there for why. The one thing this
-   costs: the Location slide's map is a cross-origin OpenStreetMap iframe,
+   costs: the Location slide's map is a cross-origin Yandex Maps iframe,
    which no canvas-based capture can read into. prepSlideForPdf() swaps it
-   for a same-origin Google Static Maps image (server.js /api/static-map)
-   for just that slide's capture, then puts the live map back — or, if no
-   Google Maps API key is configured server-side, falls back to this plain
-   text panel instead. */
+   for a same-origin static map image (server.js /api/static-map) for just
+   that slide's capture, then puts the live map back — or, if no static
+   map key is configured server-side, falls back to this plain text panel
+   instead. */
 .loc-map-pdf-img {
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover; display: block;

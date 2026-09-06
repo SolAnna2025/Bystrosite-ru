@@ -288,15 +288,16 @@ window.BSDeck = (function () {
   }
 
   function slideLocation(l, nearby, n) {
-    /* Google's unofficial "output=embed" trick now rejects most third-party
-       referrers ("must be used in an iframe" even when it is one) — it's an
-       undocumented endpoint Google can and does lock down without notice.
-       OpenStreetMap's export/embed.html is the real, documented, no-API-key
-       embed made for exactly this, so the map actually renders. */
-    var d = 0.01;
-    var bbox = (l.lng - d) + ',' + (l.lat - d) + ',' + (l.lng + d) + ',' + (l.lat + d);
-    var mapSrc = 'https://www.openstreetmap.org/export/embed.html?bbox=' + encodeURIComponent(bbox) + '&layer=mapnik&marker=' + l.lat + '%2C' + l.lng;
-    var routeUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + l.lat + ',' + l.lng;
+    /* Yandex Maps, not Google/OSM — the target audience is Russian agents
+       and their clients, for whom Yandex is the map people actually open
+       and trust. The "map-widget" embed is Yandex's documented, no-API-key
+       iframe made for exactly this (a single point on a map), same idea as
+       Google's or OSM's embed. Note the coordinate order: Yandex's ll/pt
+       URL params take longitude,latitude (reverse of lat/lng as stored
+       everywhere else in this file) — a GIS (x,y) convention, unlike the
+       lat,lon order Yandex uses when it shows coordinates to a human. */
+    var mapSrc = 'https://yandex.ru/map-widget/v1/?ll=' + l.lng + ',' + l.lat + '&z=16&l=map&pt=' + l.lng + ',' + l.lat + ',pm2rdm';
+    var routeUrl = 'https://yandex.ru/maps/?rtext=~' + l.lat + ',' + l.lng + '&rtt=auto';
     var rows = nearby.map(function (p) {
       return '<div class="loc-nearby-row"><span class="lnr-name">' + esc(p.name) + '</span>' + (p.dist ? '<span class="lnr-dist">' + esc(p.dist) + '</span>' : '') + '</div>';
     }).join('');
@@ -306,7 +307,7 @@ window.BSDeck = (function () {
       html:
         /* data-src, not src: inactive slides are hidden via display:none, which
            collapses an iframe's layout box to 0×0 — if the map loaded eagerly
-           here, OSM's embedded Leaflet would measure that 0×0 size at init and
+           here, Yandex's embedded map would measure that 0×0 size at init and
            never recover (no way to reach into a cross-origin iframe and call
            invalidateSize()). showSlide()/flipTo() below promote data-src to a
            real src only once this slide is about to become visible, so the
@@ -394,7 +395,7 @@ window.BSDeck = (function () {
     };
   }
 
-  var MESSENGER_LABELS = { whatsapp: 'WhatsApp', telegram: 'Telegram', line: 'Line' };
+  var MESSENGER_LABELS = { whatsapp: 'WhatsApp', telegram: 'Telegram', max: 'MAX' };
 
   /* Agent name/phone/photo/messengers/QR all come from the listing now —
      entered once in the /new-listing form (see index.html "Контакты
@@ -498,7 +499,7 @@ window.BSDeck = (function () {
   /* Inactive slides are hidden with display:none — cheap, and correct for
      ordinary slides (no layout/paint work, images don't decode). The one
      slide that needs a real layout size *before* it's shown is Location's
-     OpenStreetMap iframe: it lazy-loads via data-src (see slideLocation)
+     Yandex Maps iframe: it lazy-loads via data-src (see slideLocation)
      precisely so it's never inserted while its container is display:none —
      activateLazyIframes() promotes data-src to src right as a slide
      becomes active, when its box already has its true final size. */
@@ -540,7 +541,7 @@ window.BSDeck = (function () {
      ourselves as JPEG (the actual compression step Chrome's print pipeline
      was skipping) is what actually controls file size, because we choose
      the encoding instead of inheriting whatever the print pipeline embeds.
-     One consequence: the Location slide's map is a cross-origin OpenStreetMap
+     One consequence: the Location slide's map is a cross-origin Yandex Maps
      iframe, and html2canvas — like any canvas-based capture — cannot read
      into cross-origin iframe content at all. It's swapped for a plain
      text fallback (still showing the coordinates and nearby list, which
@@ -554,7 +555,7 @@ window.BSDeck = (function () {
   }
 
   /* Tries the same-origin static-map proxy (server.js /api/static-map,
-     backed by Google Static Maps — see its comment for why it's proxied
+     backed by Yandex Static Maps — see its comment for why it's proxied
      rather than called with a key straight from the browser) and resolves
      to the loaded <img>, or null if it 404s/errors/times out (no key
      configured on the server, offline, cold-started Render instance that

@@ -31,16 +31,16 @@ window.BS = window.BS || {};
   // pre-filled defaults, kept as one fixed object so the landing page can
   // render its 12 thumbnails without needing the form ever touched.
   BS.exampleListing = {
-    propertyType: 'villa',
+    propertyType: 'cottage',
     floorNumber: null,
-    title: 'Villa Aurora',
-    description: 'Одноэтажная вилла с приватным бассейном в закрытом посёлке в 7 минутах от пляжа Раваи. Полностью меблирована, панорамное остекление гостиной, тропический сад по периметру участка.',
+    title: 'Коттедж «Аврора»',
+    description: 'Одноэтажный коттедж с приватным бассейном в закрытом посёлке в 7 минутах от моря в Сочи. Полностью меблирован, панорамное остекление гостиной, средиземноморский сад по периметру участка.',
     emotionPhrase: '',
     closingPhrase: '',
-    locationName: 'Раваи, Пхукет, Таиланд',
-    lat: 7.7654,
-    lng: 98.3086,
-    currency: 'THB',
+    locationName: 'Хоста, Сочи, Краснодарский край',
+    lat: 43.5397,
+    lng: 39.8944,
+    currency: 'RUB',
     salePrice: 12500000,
     rentPrice: 95000,
     rentPeriod: 'month',
@@ -56,14 +56,14 @@ window.BS = window.BS || {};
     security: true,
     autoGate: true,
     extraFeatures: 'Видовая терраса на крыше, система «умный дом», мебель premium-класса',
-    nearby: 'Пляж Раваи — 7 минут\nМыс Промтеп — 10 минут\nМеждународная школа — 12 минут\nСупермаркет Villa Market — 5 минут\nЙога-шала — 3 минуты\nАэропорт Пхукета — 40 минут',
-    managementCompany: 'Aurora Estate Management',
+    nearby: 'Пляж — 7 минут\nЦентр Сочи — 15 минут\nМеждународная школа — 12 минут\nСупермаркет «Магнит» — 5 минут\nЙога-студия — 3 минуты\nАэропорт Сочи (Адлер) — 30 минут',
+    managementCompany: 'УК «Аврора»',
     camFee: 5500,
     cleaningFee: 800,
     cleaningPeriod: 'week',
     poolMaintenanceFee: 3000,
-    rentMarketRange: '80 000 – 110 000 THB / мес.',
-    companyName: 'Aurora Estate Realty',
+    rentMarketRange: '80 000 – 110 000 ₽ / мес.',
+    companyName: 'Аврора Недвижимость',
     photosBySlot: BS.photosBySlot,
     logo: null,
     agentName: 'Имя агента',
@@ -639,14 +639,16 @@ window.BS = window.BS || {};
     });
   }
 
-  /* ---------------- Coordinates paste (Google Maps) ---------------- */
-  /* Google Maps' own "copy coordinates" (long-press a point → tap the
-     lat,lng chip) puts a single "lat, lng" string on the clipboard — but
-     the form asks for lat/lng in two separate fields, so an agent had to
-     split that string by hand. This field accepts that string (or a
-     shared Maps link with an @lat,lng, a ?q=lat,lng, or a !3dlat!4dlng
-     segment) and fills fLat/fLng itself. Never required — plain manual
-     entry into fLat/fLng still works exactly as before. */
+  /* ---------------- Coordinates paste (Yandex Maps) ---------------- */
+  /* Yandex Maps' own "Что здесь" popup puts a single "lat, lng" string on
+     the clipboard — but the form asks for lat/lng in two separate fields,
+     so an agent had to split that string by hand. This field accepts that
+     string (or a shared Yandex Maps link with an ll= or pt= segment — note
+     those two take lon,lat, the reverse of everywhere else here, same as
+     in js/deck.js slideLocation) and fills fLat/fLng itself. Google Maps
+     link formats (@lat,lng / ?q=lat,lng / !3dlat!4dlng) are still accepted
+     too, in case an agent pastes one out of habit. Never required — plain
+     manual entry into fLat/fLng still works exactly as before. */
   var fCoordsPasteEl = document.getElementById('fCoordsPaste');
   var fLatEl = document.getElementById('fLat');
   var fLngEl = document.getElementById('fLng');
@@ -655,20 +657,25 @@ window.BS = window.BS || {};
     text = String(text || '').trim();
     if (!text) return null;
 
-    var m = text.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
+    var m = text.match(/[?&]ll=(-?\d+(?:\.\d+)?)(?:,|%2C)(-?\d+(?:\.\d+)?)/i) ||
+      text.match(/[?&]pt=(-?\d+(?:\.\d+)?)(?:,|%2C)(-?\d+(?:\.\d+)?)/i);
+    if (m) return toLatLng(m[2], m[1]); // ll=/pt= are lon,lat — swap to lat,lng
+
+    m = text.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
       text.match(/[?&]q=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
       text.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+    if (m) return toLatLng(m[1], m[2]);
 
-    if (!m) {
-      // Plain "7.7654321, 98.3086543" (optionally "7.7654321° N, 98.3086543° E").
-      var cleaned = text.replace(/[°′″'"NSEWnsew]/g, ' ').trim();
-      var parts = cleaned.split(cleaned.indexOf(',') !== -1 ? ',' : /\s+/)
-        .map(function (s) { return s.trim(); }).filter(Boolean);
-      if (parts.length === 2) m = [null, parts[0], parts[1]];
-    }
-    if (!m) return null;
+    // Plain "43.5397321, 39.8944543" (optionally "43.5397321° N, 39.8944543° E").
+    var cleaned = text.replace(/[°′″'"NSEWnsew]/g, ' ').trim();
+    var parts = cleaned.split(cleaned.indexOf(',') !== -1 ? ',' : /\s+/)
+      .map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length === 2) return toLatLng(parts[0], parts[1]);
+    return null;
+  }
 
-    var lat = Number(m[1]), lng = Number(m[2]);
+  function toLatLng(latStr, lngStr) {
+    var lat = Number(latStr), lng = Number(lngStr);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
     return { lat: lat, lng: lng };
@@ -856,7 +863,7 @@ window.BS = window.BS || {};
   fBathroomsEl.addEventListener('change', pruneRoomPhotosFromFields);
 
   /* ---------------- Property type ---------------- */
-  /* Villa/house show yard/pool/garage/gate/floor-count fields; an
+  /* House/cottage show yard/pool/garage/gate/floor-count fields; an
      apartment hides those (clearing their values so the pool/yard
      slide and photo slots stay consistent) and shows a floor number
      instead. */
@@ -865,7 +872,7 @@ window.BS = window.BS || {};
 
   function applyPropertyType() {
     var isApartment = fPropertyTypeEl.value === 'apartment';
-    Array.prototype.forEach.call(document.querySelectorAll('.field-villa'), function (el) { el.hidden = isApartment; });
+    Array.prototype.forEach.call(document.querySelectorAll('.field-house'), function (el) { el.hidden = isApartment; });
     Array.prototype.forEach.call(document.querySelectorAll('.field-apartment'), function (el) { el.hidden = !isApartment; });
     if (isApartment) {
       fPoolSizeEl.value = '';
@@ -931,7 +938,7 @@ window.BS = window.BS || {};
   var MESSENGER_DEFS = [
     { key: 'whatsapp', id: 'fMsgWhatsapp', label: 'WhatsApp' },
     { key: 'telegram', id: 'fMsgTelegram', label: 'Telegram' },
-    { key: 'line', id: 'fMsgLine', label: 'Line' },
+    { key: 'max', id: 'fMsgMax', label: 'MAX' },
   ];
 
   var agentPhotoAddBtn = document.getElementById('agentPhotoAddBtn');
@@ -1049,7 +1056,7 @@ window.BS = window.BS || {};
      the same-tab case (round-trips the same values the form already has). */
   function populateFormFromListing(listing) {
     if (!listing) return;
-    document.getElementById('fPropertyType').value = listing.propertyType || 'villa';
+    document.getElementById('fPropertyType').value = listing.propertyType || 'cottage';
     document.getElementById('fFloorNumber').value = listing.floorNumber != null ? listing.floorNumber : '';
     document.getElementById('fTitle').value = listing.title || '';
     document.getElementById('fDescription').value = listing.description || '';
@@ -1058,7 +1065,7 @@ window.BS = window.BS || {};
     document.getElementById('fLocationName').value = listing.locationName || '';
     document.getElementById('fLat').value = listing.lat != null ? listing.lat : '';
     document.getElementById('fLng').value = listing.lng != null ? listing.lng : '';
-    document.getElementById('fCurrency').value = listing.currency || 'THB';
+    document.getElementById('fCurrency').value = listing.currency || 'RUB';
     document.getElementById('fSalePrice').value = listing.salePrice != null ? listing.salePrice : '';
     document.getElementById('fRentPrice').value = listing.rentPrice != null ? listing.rentPrice : '';
     document.getElementById('fRentPeriod').value = listing.rentPeriod || 'month';

@@ -73,24 +73,25 @@ function supabaseStorageUpload(objectPath, buffer, contentType) {
 }
 
 /* ---------------- Static map proxy (PDF export) ----------------
-   The Location slide's live map is an OpenStreetMap iframe (js/deck.js
+   The Location slide's live map is a Yandex Maps iframe (js/deck.js
    slideLocation) — cross-origin, so html2canvas can't rasterize it into
    the exported PDF at all (see the comment above captureSlideToJpeg).
-   generatePdf() swaps it for a Google Static Maps image for the duration
-   of that one slide's capture instead of the old text-only fallback.
-   The key stays server-side and gets called through this same-origin
-   proxy for two reasons: (1) a Maps Static key doesn't need to be
-   embedded in the frontend bundle at all, unlike a JS-API key that must
-   run in the browser; (2) Google's static-map response has no CORS
+   generatePdf() swaps it for a static map image for the duration of that
+   one slide's capture instead of the old text-only fallback. The key
+   stays server-side and gets called through this same-origin proxy for
+   two reasons: (1) a Static Maps key doesn't need to be embedded in the
+   frontend bundle at all, unlike a JS-API key that must run in the
+   browser; (2) none of these providers' static-map responses carry CORS
    headers, which would make html2canvas's canvas capture of that image
    taint/fail if the browser loaded it cross-origin directly. */
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
-// Geoapify's free tier (openable with just an email, no billing card) is the
-// default here — Google Static Maps needs a card on file even to stay
-// within its free quota, which the agent using this deploy chose to avoid.
-// If GOOGLE_MAPS_API_KEY is ever set later it still wins (nicer styling),
-// but nothing requires it.
+const YANDEX_STATIC_MAPS_API_KEY = process.env.YANDEX_STATIC_MAPS_API_KEY || '';
+// Yandex first — same provider as the live map above, so the PDF's map
+// matches what the agent saw on screen. Geoapify's free tier (just an
+// email, no billing card) is the fallback if no Yandex key is configured.
+// GOOGLE_MAPS_API_KEY is legacy — only used if neither of the above is
+// set, kept for deploys that already had it configured.
 const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || '';
 
 function pipeMapImage(res, mapUrl) {
   fetch(mapUrl).then(function (mapRes) {
@@ -117,12 +118,16 @@ function handleStaticMap(req, res) {
   const valid = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
   if (!valid) { res.writeHead(404); res.end(); return; }
 
-  if (GOOGLE_MAPS_API_KEY) {
-    pipeMapImage(res, 'https://maps.googleapis.com/maps/api/staticmap'
-      + '?center=' + lat + ',' + lng
-      + '&zoom=15&size=640x640&scale=2&maptype=roadmap'
-      + '&markers=color:0x2c2a22%7C' + lat + ',' + lng
-      + '&key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY));
+  if (YANDEX_STATIC_MAPS_API_KEY) {
+    // Yandex's ll/pt params take lon,lat (reverse of how lat/lng are
+    // stored everywhere else in this file) — see the same note in
+    // js/deck.js slideLocation. 650x450 is the API's max size, so no
+    // scale=2 equivalent is available here.
+    pipeMapImage(res, 'https://static-maps.yandex.ru/1.x/'
+      + '?ll=' + lng + ',' + lat
+      + '&z=15&l=map&size=650,450'
+      + '&pt=' + lng + ',' + lat + ',pm2rdl'
+      + '&apikey=' + encodeURIComponent(YANDEX_STATIC_MAPS_API_KEY));
     return;
   }
 
@@ -136,8 +141,17 @@ function handleStaticMap(req, res) {
     return;
   }
 
-  // Neither key configured — 404, so the client's img.onerror falls back
-  // to the old text-only Location slide instead of a broken image.
+  if (GOOGLE_MAPS_API_KEY) {
+    pipeMapImage(res, 'https://maps.googleapis.com/maps/api/staticmap'
+      + '?center=' + lat + ',' + lng
+      + '&zoom=15&size=640x640&scale=2&maptype=roadmap'
+      + '&markers=color:0x2c2a22%7C' + lat + ',' + lng
+      + '&key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY));
+    return;
+  }
+
+  // No key configured — 404, so the client's img.onerror falls back to
+  // the old text-only Location slide instead of a broken image.
   res.writeHead(404); res.end();
 }
 
@@ -1246,7 +1260,7 @@ function handleCreateListing(req, res) {
 
       const row = {
         id,
-        property_type: listing.propertyType || 'villa',
+        property_type: listing.propertyType || 'cottage',
         floor_number: listing.floorNumber,
         title: listing.title,
         description: listing.description,
@@ -1255,7 +1269,7 @@ function handleCreateListing(req, res) {
         location_name: listing.locationName,
         lat: listing.lat,
         lng: listing.lng,
-        currency: listing.currency || 'THB',
+        currency: listing.currency || 'RUB',
         sale_price: listing.salePrice,
         rent_price: listing.rentPrice,
         rent_period: listing.rentPeriod,
@@ -1350,8 +1364,8 @@ const LISTING_ACTION_RE = /^\/api\/listings\/([0-9a-f-]{36})\/(access|reopen|fin
 /* ---------------- Per-listing Open Graph preview for /p/<id> ----------------
    index.html's <meta property="og:*"> tags are static — fine for the site
    itself, wrong for a shared listing link: every /p/<id> pasted into
-   WhatsApp/Telegram would show the same generic "Villa Aurora" demo photo
-   and title, never the agent's own villa. This intercepts exactly that
+   WhatsApp/Telegram would show the same generic "Коттедж «Аврора»" demo
+   photo and title, never the agent's own listing. This intercepts exactly that
    route, fetches the row directly (service_role bypasses RLS — no need
    for the anon-safe get_listing_by_id RPC here), and serves index.html
    with those five tags swapped for the listing's own cover photo/title/
@@ -1545,8 +1559,8 @@ server.listen(port, () => {
   if (!supabaseConfigured()) {
     console.log('  (Supabase not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; /api/listings will 501 without it, including the finalize/credits endpoints)');
   }
-  if (!GOOGLE_MAPS_API_KEY && !GEOAPIFY_API_KEY) {
-    console.log('  (Neither GOOGLE_MAPS_API_KEY nor GEOAPIFY_API_KEY is set — PDF export will fall back to a text-only Location slide instead of a static map image)');
+  if (!YANDEX_STATIC_MAPS_API_KEY && !GEOAPIFY_API_KEY && !GOOGLE_MAPS_API_KEY) {
+    console.log('  (No YANDEX_STATIC_MAPS_API_KEY, GEOAPIFY_API_KEY or GOOGLE_MAPS_API_KEY is set — PDF export will fall back to a text-only Location slide instead of a static map image)');
   }
   if (!PRODAMUS_SECRET_KEY) {
     console.log('  (PRODAMUS_SECRET_KEY is not set — /pricing payments will 501; set it and point the payform.ru notification URL at /api/prodamus-webhook)');

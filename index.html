@@ -123,9 +123,9 @@
             <div class="field">
               <label for="fPropertyType" data-i18n="fPropertyTypeLabel">Тип</label>
               <select id="fPropertyType">
-                <option value="villa" selected data-i18n="optVilla">Вилла</option>
+                <option value="apartment" data-i18n="optApartment">Квартира</option>
                 <option value="house" data-i18n="optHouse">Дом</option>
-                <option value="apartment" data-i18n="optApartment">Кондо</option>
+                <option value="cottage" selected data-i18n="optCottage">Коттедж</option>
               </select>
             </div>
           </div>
@@ -137,13 +137,13 @@
           <div class="field-row">
             <div class="field span-2">
               <label for="fTitle" data-i18n="fTitleLabel">Название объекта *</label>
-              <input type="text" id="fTitle" required data-i18n-placeholder="fTitlePh" placeholder="Villa Aurora">
+              <input type="text" id="fTitle" required data-i18n-placeholder="fTitlePh" placeholder="Коттедж «Аврора»">
             </div>
           </div>
           <div class="field-row">
             <div class="field span-2">
               <label for="fDescription" data-i18n="fDescriptionLabel">Описание</label>
-              <textarea id="fDescription" rows="4" data-i18n-placeholder="fDescriptionPh" placeholder="Одноэтажная вилла с приватным бассейном в закрытом посёлке в 7 минутах от пляжа Раваи. Полностью меблирована, панорамное остекление гостиной, тропический сад по периметру участка."></textarea>
+              <textarea id="fDescription" rows="4" data-i18n-placeholder="fDescriptionPh" placeholder="Одноэтажный коттедж с приватным бассейном в закрытом посёлке в 7 минутах от моря в Сочи. Полностью меблирован, панорамное остекление гостиной, средиземноморский сад по периметру участка."></textarea>
             </div>
           </div>
         </section>
@@ -171,24 +171,24 @@
           <div class="field-row">
             <div class="field span-2">
               <label for="fLocationName" data-i18n="fLocationNameLabel">Локация *</label>
-              <input type="text" id="fLocationName" required placeholder="напр. Раваи, Пхукет, Таиланд" data-i18n-placeholder="fLocationNamePh">
+              <input type="text" id="fLocationName" required placeholder="напр. Хоста, Сочи, Краснодарский край" data-i18n-placeholder="fLocationNamePh">
             </div>
           </div>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fCoordsPaste" data-i18n="fCoordsPasteLabel">Вставить координаты из Google Maps</label>
-              <input type="text" id="fCoordsPaste" placeholder="напр. 7.7654321, 98.3086543" data-i18n-placeholder="fCoordsPastePh">
-              <span class="field-note" data-i18n="fCoordsPasteHint">В Google Maps: долгое нажатие на точку на карте → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами</span>
+              <label for="fCoordsPaste" data-i18n="fCoordsPasteLabel">Вставить координаты из Яндекс.Карт</label>
+              <input type="text" id="fCoordsPaste" placeholder="напр. 43.5397321, 39.8944543" data-i18n-placeholder="fCoordsPastePh">
+              <span class="field-note" data-i18n="fCoordsPasteHint">В Яндекс.Картах: щёлкните правой кнопкой по нужной точке на карте → «Что здесь» → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами</span>
             </div>
           </div>
           <div class="field-row">
             <div class="field">
               <label for="fLat" data-i18n="fLatLabel">Широта (lat) *</label>
-              <input type="number" id="fLat" step="any" required placeholder="7.7654">
+              <input type="number" id="fLat" step="any" required placeholder="43.5397">
             </div>
             <div class="field">
               <label for="fLng" data-i18n="fLngLabel">Долгота (lng) *</label>
-              <input type="number" id="fLng" step="any" required placeholder="98.3086">
+              <input type="number" id="fLng" step="any" required placeholder="39.8944">
             </div>
           </div>
         </section>
@@ -200,11 +200,7 @@
             <div class="field">
               <label for="fCurrency" data-i18n="fCurrencyLabel">Валюта</label>
               <select id="fCurrency">
-                <option value="THB" selected>THB</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="RUB">RUB</option>
-                <option value="AED">AED</option>
+                <option value="RUB" selected>₽ RUB</option>
               </select>
             </div>
             <div class="field">
@@ -226,7 +222,7 @@
           <div class="field-row">
             <div class="field span-2">
               <label for="fRentMarketRange" data-i18n="fRentMarketRangeLabel">Рыночная вилка аренды по годовому контракту в районе</label>
-              <input type="text" id="fRentMarketRange" placeholder="напр. 80 000 – 110 000 THB / мес." data-i18n-placeholder="fRentMarketRangePh" maxlength="80">
+              <input type="text" id="fRentMarketRange" placeholder="напр. 80 000 – 110 000 ₽ / мес." data-i18n-placeholder="fRentMarketRangePh" maxlength="80">
             </div>
           </div>
         </section>
@@ -250,7 +246,7 @@
               <label for="fBathrooms" data-i18n="fBathroomsLabel">Ванные *</label>
               <input type="number" id="fBathrooms" min="0" required value="3">
             </div>
-            <div class="field field-villa">
+            <div class="field field-house">
               <label for="fPoolSize" data-i18n="fPoolSizeLabel">Размер бассейна</label>
               <input type="text" id="fPoolSize" placeholder="напр. 3 × 7 м" data-i18n-placeholder="fPoolSizePh">
             </div>
@@ -261,11 +257,11 @@
           <h2 data-i18n="secFeaturesTitle">Характеристики и удобства</h2>
           <p class="field-group-hint" data-i18n="secFeaturesHint">Всё необязательно — появится на слайде «Пространство для жизни», если заполнено. Набор полей зависит от типа объекта</p>
           <div class="field-row">
-            <div class="field field-villa">
+            <div class="field field-house">
               <label for="fYard" data-i18n="fYardLabel">Двор</label>
               <input type="text" id="fYard" placeholder="напр. огороженный, с газоном" data-i18n-placeholder="fYardPh">
             </div>
-            <div class="field field-villa">
+            <div class="field field-house">
               <label for="fFloors" data-i18n="fFloorsLabel">Этажность</label>
               <input type="number" id="fFloors" min="0" value="2">
             </div>
@@ -282,7 +278,7 @@
                 <option value="none" data-i18n="optFurnishedEmpty">Без мебели</option>
               </select>
             </div>
-            <div class="field field-villa">
+            <div class="field field-house">
               <label for="fGarageSpaces" data-i18n="fGarageSpacesLabel">Гараж, машиномест</label>
               <input type="number" id="fGarageSpaces" min="0" value="2">
             </div>
@@ -291,7 +287,7 @@
             <div class="field field-checkbox">
               <label class="checkbox-label"><input type="checkbox" id="fSecurity" checked> <span data-i18n="fSecurityLabel">Круглосуточная охрана</span></label>
             </div>
-            <div class="field field-checkbox field-villa">
+            <div class="field field-checkbox field-house">
               <label class="checkbox-label"><input type="checkbox" id="fAutoGate" checked> <span data-i18n="fAutoGateLabel">Автоматические ворота</span></label>
             </div>
           </div>
@@ -309,12 +305,12 @@
           <div class="field-row">
             <div class="field span-2">
               <label for="fNearby" data-i18n="fNearbyLabel">Места рядом</label>
-              <textarea id="fNearby" rows="6" data-i18n-placeholder="fNearbyPh" placeholder="Пляж Раваи — 7 минут
-Мыс Промтеп — 10 минут
+              <textarea id="fNearby" rows="6" data-i18n-placeholder="fNearbyPh" placeholder="Пляж — 7 минут
+Центр Сочи — 15 минут
 Международная школа — 12 минут
-Супермаркет Villa Market — 5 минут
-Йога-шала — 3 минуты
-Аэропорт Пхукета — 40 минут"></textarea>
+Супермаркет «Магнит» — 5 минут
+Йога-студия — 3 минуты
+Аэропорт Сочи (Адлер) — 30 минут"></textarea>
             </div>
           </div>
         </section>
@@ -325,10 +321,10 @@
           <div class="field-row">
             <div class="field span-2">
               <label for="fManagementCompany" data-i18n="fManagementCompanyLabel">Управляющая компания</label>
-              <input type="text" id="fManagementCompany" value="Aurora Estate Management">
+              <input type="text" id="fManagementCompany" value="УК «Аврора»">
             </div>
             <div class="field">
-              <label for="fCamFee" data-i18n="fCamFeeLabel">CAM fee (в месяц)</label>
+              <label for="fCamFee" data-i18n="fCamFeeLabel">Эксплуатационные платежи (в месяц)</label>
               <input type="number" id="fCamFee" min="0" value="5500">
             </div>
           </div>
@@ -369,7 +365,7 @@
           <div class="field-row">
             <div class="field span-2">
               <label for="fCompanyName" data-i18n="fCompanyNameLabel">Название компании/агентства</label>
-              <input type="text" id="fCompanyName" placeholder="напр. Aurora Estate Realty" data-i18n-placeholder="fCompanyNamePh" maxlength="60">
+              <input type="text" id="fCompanyName" placeholder="напр. Аврора Недвижимость" data-i18n-placeholder="fCompanyNamePh" maxlength="60">
             </div>
           </div>
           <div class="logo-uploader">
@@ -406,7 +402,7 @@
             <div class="messenger-check-row">
               <label class="checkbox-label"><input type="checkbox" id="fMsgWhatsapp" data-msg="whatsapp" checked> WhatsApp</label>
               <label class="checkbox-label"><input type="checkbox" id="fMsgTelegram" data-msg="telegram" checked> Telegram</label>
-              <label class="checkbox-label"><input type="checkbox" id="fMsgLine" data-msg="line"> Line</label>
+              <label class="checkbox-label"><input type="checkbox" id="fMsgMax" data-msg="max"> MAX</label>
             </div>
           </div>
           <div class="qr-uploaders" id="qrUploaders"><!-- QR upload tiles injected by js/app.js --></div>
