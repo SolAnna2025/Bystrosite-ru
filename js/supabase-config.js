@@ -6,6 +6,6 @@
    ============================================================ */
 
 window.BS_SUPABASE = {
-  url: 'https://vnbwiirybsqptngyhgjv.supabase.co',
-  anonKey: 'sb_publishable_ZyA3ePU6DaoFCpF2RPbDAg_5w1ifJqE',
+  url: 'https://creturskbnqztuxzmjgf.supabase.co',
+  anonKey: 'sb_publishable_AAi8TYLl9eaIiEQlh4VfiQ_IwMf_M22',
 };
