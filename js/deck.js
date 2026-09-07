@@ -182,6 +182,43 @@ window.BSDeck = (function () {
     };
   }
 
+  function buildingClassLabel(v) {
+    if (v === 'economy') return t('optBuildingClassEconomy');
+    if (v === 'comfort') return t('optBuildingClassComfort');
+    if (v === 'business') return t('optBuildingClassBusiness');
+    if (v === 'premium') return t('optBuildingClassPremium');
+    return v || '';
+  }
+
+  /* Conditional: only included in buildSlides() at all when at least one of
+     these fields is filled in (see buildingShown there) — an agent working
+     on a standalone house with no managed complex around it just never
+     fills in "О доме / ЖК" and this slide quietly doesn't exist. */
+  function slideBuilding(l, n) {
+    var specs = [];
+    if (l.complexName) specs.push({ label: t('deckSpecComplexName'), value: l.complexName });
+    if (l.buildYear != null) specs.push({ label: t('deckSpecBuildYear'), value: String(l.buildYear) });
+    if (l.buildingClass) specs.push({ label: t('deckSpecBuildingClass'), value: buildingClassLabel(l.buildingClass) });
+    if (l.buildingFloors != null) specs.push({ label: t('deckSpecBuildingFloors'), value: String(l.buildingFloors) });
+    if (l.elevators) specs.push({ label: t('deckSpecElevators'), value: l.elevators });
+    if (l.parking) specs.push({ label: t('deckSpecParking'), value: l.parking });
+
+    var specRows = specs.map(function (s) {
+      return '<div class="spec-row"><span class="sr-label">' + esc(s.label) + '</span><span class="sr-value">' + esc(s.value) + '</span></div>';
+    }).join('');
+
+    return {
+      label: t('deckBuildingLabel'),
+      cls: 'slide-conditions',
+      html:
+        '<div class="slide-pad">' +
+          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckBuildingLabel')) + '</span>' +
+          (specRows ? '<div class="spec-grid">' + specRows + '</div>' : '') +
+          (l.infrastructure ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckInfrastructureLabel')) + '</span><p>' + esc(l.infrastructure) + '</p></div>' : '') +
+        '</div>',
+    };
+  }
+
   /* Conditional: shows pool photo(s) if a pool is declared, yard/terrace
      photo(s) if only a yard is declared, or is skipped entirely (e.g. an
      apartment with neither) — see outdoorShown() below. */
@@ -446,7 +483,8 @@ window.BSDeck = (function () {
     var bathroomsN = Math.max(0, Math.floor(Number(l.bathrooms) || 0));
     var outdoorShown = !!(l.poolSize || l.yard);
     var interiorsN = interiorsShown(l);
-    var total = 5 + (outdoorShown ? 1 : 0) + (interiorsN ? 1 : 0) + (bedroomsN > 0 ? 1 : 0) + (bathroomsN > 0 ? 1 : 0) + 3;
+    var buildingShown = !!(l.complexName || l.buildYear != null || l.buildingClass || l.buildingFloors != null || l.elevators || l.parking || l.infrastructure);
+    var total = 5 + (outdoorShown ? 1 : 0) + (interiorsN ? 1 : 0) + (bedroomsN > 0 ? 1 : 0) + (bathroomsN > 0 ? 1 : 0) + (buildingShown ? 1 : 0) + 3;
 
     var n = 0;
     var slides = [
@@ -455,6 +493,7 @@ window.BSDeck = (function () {
       slideLiving(l, ++n),
       slideArchitecture(l, ++n),
     ];
+    if (buildingShown) slides.push(slideBuilding(l, ++n));
     if (outdoorShown) slides.push(slideOutdoor(l, ++n));
     slides.push(slideDetails(l, ++n));
     if (interiorsN) slides.push(slideInteriors(l, ++n));

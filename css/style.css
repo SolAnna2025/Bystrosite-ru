@@ -14,6 +14,11 @@
   --color-accent: #493a34;
   --color-accent-dark: #342822;
   --color-border: rgba(36, 36, 33, 0.14);
+  /* Deliberately outside the muted editorial palette above — a required,
+     still-empty field needs to read as "unfinished" at a glance among rows
+     of ordinary brown-bordered fields, which --color-accent is too close in
+     value to do on its own (see .field-required-missing below). */
+  --color-required: #c53d2e;
 
   --font-heading: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'Manrope', system-ui, sans-serif;
@@ -302,6 +307,16 @@ figure { margin: 0; }
   border-color: var(--color-accent);
 }
 .field textarea { resize: vertical; min-height: 110px; }
+/* Live-updated in js/app.js (updateRequiredHighlights) on every keystroke —
+   not just after a failed submit — so a required field still empty glows
+   the moment it's visible, telling the agent what's left before they even
+   try to submit. Removed the instant a value is typed. */
+.field input.field-required-missing,
+.field select.field-required-missing {
+  border-color: var(--color-required);
+  box-shadow: 0 0 0 3px rgba(197, 61, 46, 0.16);
+}
+.field label.field-required-missing-label { color: var(--color-required); }
 .field-checkbox { flex-direction: row; align-items: center; justify-content: flex-start; }
 .checkbox-label {
   display: flex; align-items: center; gap: 10px;

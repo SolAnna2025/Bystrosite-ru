@@ -86,6 +86,23 @@ window.BSI18n = (function () {
       fExtraFeaturesLabel: 'Дополнительные преимущества',
       fExtraFeaturesPh: 'напр. видовая терраса, смарт-дом, мебель premium-класса',
 
+      secBuildingTitle: 'О доме / ЖК',
+      secBuildingHint: 'Необязательно — появится отдельным слайдом «О доме», если заполнено хотя бы одно поле',
+      fComplexNameLabel: 'Название ЖК / дома',
+      fComplexNamePh: 'напр. ЖК «Аврора Парк»',
+      fBuildYearLabel: 'Год постройки / сдачи',
+      fBuildingClassLabel: 'Класс жилья',
+      optBuildingClassNone: 'Не указано', optBuildingClassEconomy: 'Эконом',
+      optBuildingClassComfort: 'Комфорт', optBuildingClassBusiness: 'Бизнес',
+      optBuildingClassPremium: 'Премиум',
+      fBuildingFloorsLabel: 'Этажей в доме',
+      fElevatorsLabel: 'Лифты',
+      fElevatorsPh: 'напр. 2 пассажирских, 1 грузовой',
+      fParkingLabel: 'Паркинг',
+      fParkingPh: 'напр. подземный, закрытый',
+      fInfrastructureLabel: 'Инфраструктура и благоустройство',
+      fInfrastructurePh: 'напр. закрытая охраняемая территория, детская и спортивная площадки, двор без машин, консьерж-сервис',
+
       secNearbyTitle: 'Что рядом',
       secNearbyHint: 'Необязательно. По одному месту на строке — «Название — время или расстояние». Используется на слайдах «Локация» и «Что рядом»',
       fNearbyLabel: 'Места рядом',
@@ -238,6 +255,12 @@ window.BSI18n = (function () {
       deckSpecManagement: 'Управление', deckExtraLabel: 'Дополнительно',
 
       deckArchitectureLabel: 'Архитектура',
+
+      deckBuildingLabel: 'О доме',
+      deckSpecComplexName: 'ЖК / дом', deckSpecBuildYear: 'Год постройки',
+      deckSpecBuildingClass: 'Класс', deckSpecBuildingFloors: 'Этажей в доме',
+      deckSpecElevators: 'Лифты', deckSpecParking: 'Паркинг',
+      deckInfrastructureLabel: 'Инфраструктура',
 
       deckOutdoorTerritory: 'Территория',
       deckOutdoorPoolAlt: 'Бассейн', deckOutdoorTerraceAlt: 'Терраса, двор',
@@ -445,6 +468,23 @@ window.BSI18n = (function () {
       fExtraFeaturesLabel: 'Extra highlights',
       fExtraFeaturesPh: 'e.g. rooftop view terrace, smart home, premium-class furniture',
 
+      secBuildingTitle: 'About the building',
+      secBuildingHint: 'Optional — appears as its own "About the building" slide if at least one field is filled in',
+      fComplexNameLabel: 'Complex / building name',
+      fComplexNamePh: 'e.g. Aurora Park residence',
+      fBuildYearLabel: 'Year built / completed',
+      fBuildingClassLabel: 'Building class',
+      optBuildingClassNone: 'Not specified', optBuildingClassEconomy: 'Economy',
+      optBuildingClassComfort: 'Comfort', optBuildingClassBusiness: 'Business',
+      optBuildingClassPremium: 'Premium',
+      fBuildingFloorsLabel: 'Floors in the building',
+      fElevatorsLabel: 'Elevators',
+      fElevatorsPh: 'e.g. 2 passenger, 1 freight',
+      fParkingLabel: 'Parking',
+      fParkingPh: 'e.g. underground, gated',
+      fInfrastructureLabel: 'Infrastructure & amenities',
+      fInfrastructurePh: 'e.g. gated and guarded territory, playground and sports area, car-free courtyard, concierge service',
+
       secNearbyTitle: 'What’s nearby',
       secNearbyHint: 'Optional. One place per line — "Name — time or distance". Used on the "Location" and "Nearby" slides',
       fNearbyLabel: 'Nearby places',
@@ -597,6 +637,12 @@ window.BSI18n = (function () {
       deckSpecManagement: 'Management', deckExtraLabel: 'Additional',
 
       deckArchitectureLabel: 'Architecture',
+
+      deckBuildingLabel: 'About the building',
+      deckSpecComplexName: 'Building', deckSpecBuildYear: 'Year built',
+      deckSpecBuildingClass: 'Class', deckSpecBuildingFloors: 'Floors',
+      deckSpecElevators: 'Elevators', deckSpecParking: 'Parking',
+      deckInfrastructureLabel: 'Infrastructure',
 
       deckOutdoorTerritory: 'Grounds',
       deckOutdoorPoolAlt: 'Pool', deckOutdoorTerraceAlt: 'Terrace, yard',

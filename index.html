@@ -300,6 +300,53 @@
         </section>
 
         <section class="field-group">
+          <h2 data-i18n="secBuildingTitle">О доме / ЖК</h2>
+          <p class="field-group-hint" data-i18n="secBuildingHint">Необязательно — появится отдельным слайдом «О доме», если заполнено хотя бы одно поле</p>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fComplexName" data-i18n="fComplexNameLabel">Название ЖК / дома</label>
+              <input type="text" id="fComplexName" placeholder="напр. ЖК «Аврора Парк»" data-i18n-placeholder="fComplexNamePh" maxlength="80">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="fBuildYear" data-i18n="fBuildYearLabel">Год постройки / сдачи</label>
+              <input type="number" id="fBuildYear" min="1900" max="2100">
+            </div>
+            <div class="field">
+              <label for="fBuildingClass" data-i18n="fBuildingClassLabel">Класс жилья</label>
+              <select id="fBuildingClass">
+                <option value="" data-i18n="optBuildingClassNone">Не указано</option>
+                <option value="economy" data-i18n="optBuildingClassEconomy">Эконом</option>
+                <option value="comfort" data-i18n="optBuildingClassComfort">Комфорт</option>
+                <option value="business" data-i18n="optBuildingClassBusiness">Бизнес</option>
+                <option value="premium" data-i18n="optBuildingClassPremium">Премиум</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fBuildingFloors" data-i18n="fBuildingFloorsLabel">Этажей в доме</label>
+              <input type="number" id="fBuildingFloors" min="0">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="fElevators" data-i18n="fElevatorsLabel">Лифты</label>
+              <input type="text" id="fElevators" placeholder="напр. 2 пассажирских, 1 грузовой" data-i18n-placeholder="fElevatorsPh">
+            </div>
+            <div class="field">
+              <label for="fParking" data-i18n="fParkingLabel">Паркинг</label>
+              <input type="text" id="fParking" placeholder="напр. подземный, закрытый" data-i18n-placeholder="fParkingPh">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field span-2">
+              <label for="fInfrastructure" data-i18n="fInfrastructureLabel">Инфраструктура и благоустройство</label>
+              <textarea id="fInfrastructure" rows="3" placeholder="напр. закрытая охраняемая территория, детская и спортивная площадки, двор без машин, консьерж-сервис" data-i18n-placeholder="fInfrastructurePh"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="field-group">
           <h2 data-i18n="secNearbyTitle">Что рядом</h2>
           <p class="field-group-hint" data-i18n="secNearbyHint">Необязательно. По одному месту на строке — «Название — время или расстояние». Используется на слайдах «Локация» и «Что рядом»</p>
           <div class="field-row">

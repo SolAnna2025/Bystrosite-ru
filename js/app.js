@@ -56,6 +56,13 @@ window.BS = window.BS || {};
     security: true,
     autoGate: true,
     extraFeatures: 'Видовая терраса на крыше, система «умный дом», мебель premium-класса',
+    complexName: 'Коттеджный посёлок «Аврора Парк»',
+    buildYear: 2022,
+    buildingClass: 'business',
+    buildingFloors: null,
+    elevators: '',
+    parking: 'Открытый гостевой, у каждого дома — свой',
+    infrastructure: 'Закрытая охраняемая территория, детская и спортивная площадки, ландшафтный двор без машин, консьерж-сервис',
     nearby: 'Пляж — 7 минут\nЦентр Сочи — 15 минут\nМеждународная школа — 12 минут\nСупермаркет «Магнит» — 5 минут\nЙога-студия — 3 минуты\nАэропорт Сочи (Адлер) — 30 минут',
     managementCompany: 'УК «Аврора»',
     camFee: 5500,
@@ -146,6 +153,13 @@ window.BS = window.BS || {};
       security: row.security,
       autoGate: row.auto_gate,
       extraFeatures: row.extra_features,
+      complexName: row.complex_name,
+      buildYear: row.build_year,
+      buildingClass: row.building_class,
+      buildingFloors: row.building_floors,
+      elevators: row.elevators,
+      parking: row.parking,
+      infrastructure: row.infrastructure,
       nearby: row.nearby,
       managementCompany: row.management_company,
       camFee: row.cam_fee,
@@ -1081,6 +1095,13 @@ window.BS = window.BS || {};
     document.getElementById('fSecurity').checked = !!listing.security;
     document.getElementById('fAutoGate').checked = !!listing.autoGate;
     document.getElementById('fExtraFeatures').value = listing.extraFeatures || '';
+    document.getElementById('fComplexName').value = listing.complexName || '';
+    document.getElementById('fBuildYear').value = listing.buildYear != null ? listing.buildYear : '';
+    document.getElementById('fBuildingClass').value = listing.buildingClass || '';
+    document.getElementById('fBuildingFloors').value = listing.buildingFloors != null ? listing.buildingFloors : '';
+    document.getElementById('fElevators').value = listing.elevators || '';
+    document.getElementById('fParking').value = listing.parking || '';
+    document.getElementById('fInfrastructure').value = listing.infrastructure || '';
     document.getElementById('fNearby').value = listing.nearby || '';
     document.getElementById('fManagementCompany').value = listing.managementCompany || '';
     document.getElementById('fCamFee').value = listing.camFee != null ? listing.camFee : '';
@@ -1107,6 +1128,7 @@ window.BS = window.BS || {};
     renderAgentPhotoPreview();
     renderQrUploaders();
     if (window.BSI18n) window.BSI18n.apply();
+    updateRequiredHighlights();
   }
 
   /* ---------------- Form submit ---------------- */
@@ -1233,6 +1255,40 @@ window.BS = window.BS || {};
   function num(id) { var v = val(id); return v === '' ? null : Number(v); }
   function bool(id) { return document.getElementById(id).checked; }
 
+  /* ---------------- Required-field highlighting ----------------
+     Runs live (on every keystroke via the form-wide 'input' listener below,
+     and once on initial load/populate) rather than only after a failed
+     submit attempt — the agent sees straight away which of the few
+     required fields are still empty, instead of discovering it only after
+     clicking "Создать презентацию" and getting a wall of red. The glow
+     itself (.field-required-missing / -label, css/style.css) uses a
+     dedicated warning color distinct from the site's muted editorial
+     accent specifically so it reads as "unfinished" at a glance. */
+  var REQUIRED_FIELD_IDS = ['fTitle', 'fLocationName', 'fLat', 'fLng', 'fHouseArea', 'fBedrooms', 'fBathrooms', 'fAgentPhone'];
+
+  function setFieldMissing(id, isMissing) {
+    var el = document.getElementById(id);
+    el.classList.toggle('field-required-missing', isMissing);
+    var label = document.querySelector('label[for="' + id + '"]');
+    if (label) label.classList.toggle('field-required-missing-label', isMissing);
+  }
+
+  function updateRequiredHighlights() {
+    var missing = REQUIRED_FIELD_IDS.filter(function (id) { return val(id) === ''; });
+    var salePrice = num('fSalePrice');
+    var rentPrice = num('fRentPrice');
+    var missingPrice = salePrice === null && rentPrice === null;
+
+    REQUIRED_FIELD_IDS.forEach(function (id) { setFieldMissing(id, missing.indexOf(id) !== -1); });
+    setFieldMissing('fSalePrice', missingPrice);
+    setFieldMissing('fRentPrice', missingPrice);
+
+    return { missing: missing, salePrice: salePrice, rentPrice: rentPrice, missingPrice: missingPrice };
+  }
+
+  form.addEventListener('input', updateRequiredHighlights);
+  updateRequiredHighlights();
+
   /* Creating a listing is always free and unrestricted, regardless of
      credits/subscription — the finalize gate (see requestFinalize below)
      only ever applies to an *existing* listing being edited/re-submitted
@@ -1241,31 +1297,20 @@ window.BS = window.BS || {};
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
-    var requiredIds = ['fTitle', 'fLocationName', 'fLat', 'fLng', 'fHouseArea', 'fBedrooms', 'fBathrooms', 'fAgentPhone'];
-    var missing = requiredIds.filter(function (id) { return val(id) === ''; });
-    var salePrice = num('fSalePrice');
-    var rentPrice = num('fRentPrice');
-    var missingPrice = salePrice === null && rentPrice === null;
-
-    requiredIds.forEach(function (id) {
-      document.getElementById(id).style.borderColor = missing.indexOf(id) !== -1 ? 'var(--color-accent)' : '';
-    });
-    ['fSalePrice', 'fRentPrice'].forEach(function (id) {
-      document.getElementById(id).style.borderColor = missingPrice ? 'var(--color-accent)' : '';
-    });
-    fAgentPhoneError.classList.toggle('visible', missing.indexOf('fAgentPhone') !== -1);
+    var state = updateRequiredHighlights();
+    fAgentPhoneError.classList.toggle('visible', state.missing.indexOf('fAgentPhone') !== -1);
 
     var consentMissing = !fConsentEl.checked;
     fConsentError.classList.toggle('visible', consentMissing);
 
-    if (missing.length || missingPrice || consentMissing) {
+    if (state.missing.length || state.missingPrice || consentMissing) {
       formError.classList.add('visible');
       formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     formError.classList.remove('visible');
 
-    finishSubmit(salePrice, rentPrice);
+    finishSubmit(state.salePrice, state.rentPrice);
   });
 
   function finishSubmit(salePrice, rentPrice) {
@@ -1306,6 +1351,13 @@ window.BS = window.BS || {};
       security: bool('fSecurity'),
       autoGate: bool('fAutoGate'),
       extraFeatures: val('fExtraFeatures'),
+      complexName: val('fComplexName'),
+      buildYear: num('fBuildYear'),
+      buildingClass: val('fBuildingClass'),
+      buildingFloors: num('fBuildingFloors'),
+      elevators: val('fElevators'),
+      parking: val('fParking'),
+      infrastructure: val('fInfrastructure'),
       nearby: val('fNearby'),
       managementCompany: val('fManagementCompany'),
       camFee: num('fCamFee'),
