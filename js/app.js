@@ -195,6 +195,7 @@ window.BS = window.BS || {};
   var viewForm = document.getElementById('view-form');
   var viewPreview = document.getElementById('view-preview');
   var deckBackBtn = document.getElementById('deckBack');
+  var deckEditEntryBtn = document.getElementById('deckEditEntry');
 
   /* ---------------- Edit-access gate (/edit/<id>) ----------------
      /p/<id> (below) is the link an agent sends a client — a read-only
@@ -269,6 +270,7 @@ window.BS = window.BS || {};
     // below) — avoids a stray, non-functional edit button on the
     // loading/not-found stage states.
     if (deckBackBtn) deckBackBtn.hidden = true;
+    if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
     var stageEl = document.getElementById('stage');
     if (stageEl) stageEl.innerHTML = '<div class="deck-status-msg">' + (window.BSI18n ? window.BSI18n.t('deckLoading') : 'Загрузка…') + '</div>';
     loadListingFromServer(id).then(function (listing) {
@@ -323,6 +325,7 @@ window.BS = window.BS || {};
         var gateStageEl = document.getElementById('stage');
         if (gateStageEl) gateStageEl.innerHTML = '';
         if (deckBackBtn) deckBackBtn.hidden = true;
+        if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
         editGatePendingId = editId;
         editGatePhoneErrorEl.classList.remove('visible');
         editGatePhoneEl.value = '';
@@ -354,6 +357,7 @@ window.BS = window.BS || {};
       // whatever showPreview(true) had last left it as (e.g. the agent's
       // own /new-listing → /preview flow just before, in the same tab).
       if (deckBackBtn) deckBackBtn.hidden = true;
+      if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
       var stageEl = document.getElementById('stage');
       if (stageEl) stageEl.innerHTML = '<div class="deck-status-msg">' + (window.BSI18n ? window.BSI18n.t('deckLoading') : 'Загрузка…') + '</div>';
       loadListingFromServer(shareId).then(function (listing) {
@@ -392,10 +396,17 @@ window.BS = window.BS || {};
   // allowEdit controls whether "← Редактировать" is shown at all — true
   // only for the agent's own same-tab /preview flow and an authorized
   // /edit/<id>; always false for a public /p/<id> view. See showPreview's
-  // callers above for exactly which route passes which.
+  // callers above for exactly which route passes which. The inverse case
+  // (!allowEdit) shows deckEditEntryBtn instead — the agent's own way back
+  // in from that same public link, in case they spot a mistake after
+  // sending it. Only when there's actually an id to edit: a same-tab
+  // agent-authored /preview (BS.listing set locally, allowEdit true) never
+  // reaches this branch, but guard anyway since BS.listing.id can still be
+  // unset for a moment right after submit, before persistListing() returns.
   function showPreview(allowEdit) {
     viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
     if (deckBackBtn) deckBackBtn.hidden = !allowEdit;
+    if (deckEditEntryBtn) deckEditEntryBtn.hidden = allowEdit || !BS.listing || !BS.listing.id;
     if (window.BSDeck) window.BSDeck.render(BS.listing);
     if (window.BSI18n) window.BSI18n.apply();
   }
@@ -512,6 +523,16 @@ window.BS = window.BS || {};
       populateFormFromListing(BS.listing);
       navigate('/new-listing');
     });
+  });
+
+  // Just routes to /edit/<id> — renderRoute()'s own editAuthorized() check
+  // is what actually gates this (unverified here, on purpose: this button
+  // shows on the public /p/<id> view, reached by anyone with the link, not
+  // just the agent who created it).
+  if (deckEditEntryBtn) deckEditEntryBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (deckEditEntryBtn.hidden || !BS.listing || !BS.listing.id) return;
+    navigate('/edit/' + BS.listing.id);
   });
 
   var deckShareBtn = document.getElementById('deckShareBtn');

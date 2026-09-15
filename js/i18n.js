@@ -165,6 +165,7 @@ window.BSI18n = (function () {
 
       submitBtn: 'Создать презентацию →',
       deckBackBtn: '← Редактировать',
+      deckEditEntryBtn: 'Это моя презентация — исправить →',
       deckShareBtn: 'Поделиться',
       deckPdfBtn: 'Скачать PDF',
       deckPdfPreparing: 'Готовим PDF…',
@@ -485,6 +486,7 @@ window.BSI18n = (function () {
 
       submitBtn: 'Create presentation →',
       deckBackBtn: '← Edit',
+      deckEditEntryBtn: 'This is my listing — fix it →',
       deckShareBtn: 'Share',
       deckPdfBtn: 'Download PDF',
       deckPdfPreparing: 'Preparing PDF…',

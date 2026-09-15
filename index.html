@@ -551,6 +551,13 @@
          so it can check finalize/edit access first (see requestEditAccess)
          before navigating back to the form. -->
     <button type="button" class="deck-back" id="deckBack" data-i18n="deckBackBtn">← Редактировать</button>
+    <!-- Shown instead of deckBack on the public /p/<id> view (the buyer's
+         copy of the link) — lets the agent who sent that exact link notice
+         a mistake and get straight back into editing it, without needing to
+         separately know/type /edit/<id>. Clicking routes through the same
+         phone-verification gate as any other /edit/<id> entry — see
+         requestEditAccess/editGateModal wiring in js/app.js. -->
+    <a href="#" class="deck-edit-entry" id="deckEditEntry" data-i18n="deckEditEntryBtn" hidden>Это моя презентация — исправить →</a>
     <div class="deck-actions">
       <button type="button" class="deck-action-btn" id="deckShareBtn" data-i18n="deckShareBtn">Поделиться</button>
       <button type="button" class="deck-action-btn" id="deckPdfBtn" data-i18n="deckPdfBtn">Скачать PDF</button>

@@ -482,6 +482,15 @@
   padding: 6px 8px;
 }
 .deck-back:hover { color: #f2efe8; }
+/* Same fixed top-left slot as .deck-back — the two are never shown at once
+   (see showPreview() in js/app.js), so they can share the position. */
+.deck-edit-entry {
+  position: fixed; left: 28px; top: 26px; z-index: 50;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.62);
+  padding: 6px 8px; text-decoration: none;
+}
+.deck-edit-entry:hover { color: rgba(242, 239, 232, 0.92); }
 /* Pushed down from the top edge (was top:26px): .global-logo (the agent's
    own company name/logo badge — see js/deck.js) sits at top:32px;right:48px
    *inside* the scaled stage, while these two buttons are fixed to the real
