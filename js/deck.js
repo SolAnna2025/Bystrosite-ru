@@ -112,12 +112,6 @@ window.BSDeck = (function () {
   function slideLiving(l, n) {
     var photo = getPhoto(l, 'living');
     var body = wordCap(l.description, 18);
-    // "Информация о посёлке" (villa/house) / "Информация о ЖК" (apartment) —
-    // same toggle-by-propertyType convention as fFloors/fFloorNumber; only
-    // one of the two ever has a value at a time (js/app.js clears the other
-    // on type switch), so at most one of these renders.
-    var communityText = l.propertyType === 'apartment' ? l.buildingInfo : l.communityInfo;
-    var communityLabel = l.propertyType === 'apartment' ? t('deckBuildingInfoLabel') : t('deckCommunityInfoLabel');
     var specs = [];
     if (l.houseArea != null) specs.push({ label: t('deckSpecHouse'), value: l.houseArea + ' ' + t('unitSqm') });
     if (l.plotArea != null) specs.push({ label: t('deckSpecPlot'), value: l.plotArea + ' ' + t('unitSqm') });
@@ -151,7 +145,6 @@ window.BSDeck = (function () {
           (body ? '<p class="ed-body">' + esc(body) + '</p>' : '') +
           '<div class="spec-grid">' + specRows + '</div>' +
           (l.extraFeatures ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckExtraLabel')) + '</span><p>' + esc(l.extraFeatures) + '</p></div>' : '') +
-          (communityText ? '<div class="extra-features"><span class="ef-label">' + esc(communityLabel) + '</span><p>' + esc(communityText) + '</p></div>' : '') +
         '</div>',
     };
   }
@@ -200,8 +193,24 @@ window.BSDeck = (function () {
   /* Conditional: only included in buildSlides() at all when at least one of
      these fields is filled in (see buildingShown there) — an agent working
      on a standalone house with no managed complex around it just never
-     fills in "О доме / ЖК" and this slide quietly doesn't exist. */
+     fills in "О доме / ЖК" and this slide quietly doesn't exist.
+
+     Labeled "О посёлке"/"О ЖК" rather than the generic "О доме" — this
+     slide is about the surrounding development/complex, not the unit
+     itself — same toggle-by-propertyType convention as fFloors/fFloorNumber
+     (only one of communityInfo/buildingInfo ever has a value at a time,
+     js/app.js clears the other on type switch). That free-text field used
+     to render on the Living slide instead, which left this one looking
+     thin (just a spec row or two) whenever an agent filled it in. */
   function slideBuilding(l, n) {
+    var communityText = l.propertyType === 'apartment' ? l.buildingInfo : l.communityInfo;
+    // The slide's own kicker/label (short: "О посёлке"/"О ЖК") vs. the
+    // free-text block's sub-label (the longer form-field phrasing) — kept
+    // distinct so the paragraph isn't introduced by a bare repeat of the
+    // heading directly above it.
+    var communityLabel = l.propertyType === 'apartment' ? t('deckBuildingInfoLabel') : t('deckCommunityInfoLabel');
+    var communityTextLabel = l.propertyType === 'apartment' ? t('fBuildingInfoLabel') : t('fCommunityInfoLabel');
+
     var specs = [];
     if (l.complexName) specs.push({ label: t('deckSpecComplexName'), value: l.complexName });
     if (l.buildYear != null) specs.push({ label: t('deckSpecBuildYear'), value: String(l.buildYear) });
@@ -215,13 +224,14 @@ window.BSDeck = (function () {
     }).join('');
 
     return {
-      label: t('deckBuildingLabel'),
+      label: communityLabel,
       cls: 'slide-conditions',
       html:
         '<div class="slide-pad">' +
-          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckBuildingLabel')) + '</span>' +
+          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(communityLabel) + '</span>' +
           (specRows ? '<div class="spec-grid">' + specRows + '</div>' : '') +
           (l.infrastructure ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckInfrastructureLabel')) + '</span><p>' + esc(l.infrastructure) + '</p></div>' : '') +
+          (communityText ? '<div class="extra-features"><span class="ef-label">' + esc(communityTextLabel) + '</span><p>' + esc(communityText) + '</p></div>' : '') +
         '</div>',
     };
   }
@@ -490,7 +500,7 @@ window.BSDeck = (function () {
     var bathroomsN = Math.max(0, Math.floor(Number(l.bathrooms) || 0));
     var outdoorShown = !!(l.poolSize || l.yard);
     var interiorsN = interiorsShown(l);
-    var buildingShown = !!(l.complexName || l.buildYear != null || l.buildingClass || l.buildingFloors != null || l.elevators || l.parking || l.infrastructure);
+    var buildingShown = !!(l.complexName || l.buildYear != null || l.buildingClass || l.buildingFloors != null || l.elevators || l.parking || l.infrastructure || l.communityInfo || l.buildingInfo);
     // Both coordinates, not just one — a lone lat or lng can't place a
     // marker anywhere, and shipping the slide with a broken/empty Yandex
     // embed is worse than just not having a location slide at all (see

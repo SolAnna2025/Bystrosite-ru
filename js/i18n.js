@@ -226,7 +226,6 @@ window.BSI18n = (function () {
 
       deckArchitectureLabel: 'Архитектура',
 
-      deckBuildingLabel: 'О доме',
       deckSpecComplexName: 'ЖК / дом', deckSpecBuildYear: 'Год постройки',
       deckSpecBuildingClass: 'Класс', deckSpecBuildingFloors: 'Этажей в доме',
       deckSpecElevators: 'Лифты', deckSpecParking: 'Паркинг',
@@ -547,7 +546,6 @@ window.BSI18n = (function () {
 
       deckArchitectureLabel: 'Architecture',
 
-      deckBuildingLabel: 'About the building',
       deckSpecComplexName: 'Building', deckSpecBuildYear: 'Year built',
       deckSpecBuildingClass: 'Class', deckSpecBuildingFloors: 'Floors',
       deckSpecElevators: 'Elevators', deckSpecParking: 'Parking',
