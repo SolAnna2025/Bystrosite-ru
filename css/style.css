@@ -165,7 +165,7 @@ figure { margin: 0; }
 .policy-back { margin-top: 32px; }
 
 /* ---------------- Site footer ---------------- */
-/* Present on the app-chrome pages (landing/form/pricing/policy) — deliberately
+/* Present on the app-chrome pages (landing/form/policy) — deliberately
    left off the /preview deck, which is the agent's own client-facing
    presentation, not Быстросайт's own chrome. */
 .app-footer {
@@ -176,61 +176,6 @@ figure { margin: 0; }
 .app-footer p { margin: 0; }
 .app-footer p + p { margin-top: 6px; }
 .app-footer a { color: var(--color-text-muted); }
-
-/* ---------------- Pricing page ---------------- */
-.pricing-shell { max-width: 860px; margin: 0 auto; padding: 72px 24px 100px; text-align: center; }
-.pricing-shell h1 { font-size: 40px; margin-bottom: 14px; }
-.pricing-shell > p { font-size: 17px; color: var(--color-text-muted); margin: 0 0 44px; }
-.pricing-cards { display: flex; gap: 20px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; align-items: stretch; }
-.pricing-card {
-  flex: 1; min-width: 220px; max-width: 270px;
-  padding: 32px 24px; border-radius: var(--radius-lg);
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  display: flex; flex-direction: column;
-}
-.pricing-card-featured { border-color: var(--color-accent); }
-.pricing-card-title { font-size: 15px; font-weight: 700; color: var(--color-text-muted); margin-bottom: 12px; }
-.pricing-card-price { font-family: var(--font-heading); font-size: 36px; margin-bottom: 18px; }
-.pricing-card-period { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--color-text-muted); }
-.pricing-card-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.pricing-card-features li {
-  font-size: 14px; color: var(--color-text-muted);
-  padding-top: 10px; border-top: 1px solid var(--color-border);
-}
-.pricing-card-features li:first-child { padding-top: 0; border-top: none; }
-.pricing-card-pay { margin-top: 24px; width: 100%; }
-
-/* ---------------- Payment panel ---------------- */
-.pricing-payment {
-  max-width: 640px; margin: 0 auto 40px;
-  padding: 36px 32px; border-radius: var(--radius-lg);
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  text-align: center;
-}
-.pricing-payment-close {
-  appearance: none; border: 0; background: none; cursor: pointer;
-  font-family: var(--font-body); font-size: 13px; font-weight: 600;
-  color: var(--color-text-muted); padding: 0; margin-bottom: 18px;
-}
-.pricing-payment-close:hover { color: var(--color-accent-dark); }
-.pricing-payment-plan { font-size: 22px; margin: 0 0 12px; }
-.pricing-payment-delay {
-  font-size: 14px; color: var(--color-text-muted); margin: 0 0 28px;
-  max-width: 440px; margin-left: auto; margin-right: auto;
-}
-.pricing-pay-phone-row { max-width: 340px; margin: 0 auto 20px; text-align: left; }
-.pricing-pay-go { width: 100%; max-width: 340px; }
-.pricing-pay-go:disabled { opacity: 0.6; cursor: default; }
-.pricing-pay-error {
-  font-size: 13px; color: var(--color-accent-dark); margin: 12px auto 0;
-  max-width: 340px;
-}
-/* The Telegram fallback for "paid but nothing unlocked" — styled as a full
-   button (it used to sit quietly beside the QR/countdown; both are gone
-   now that payform's webhook confirms automatically) so it still reads as
-   a real, findable action rather than an afterthought link. */
-.pricing-help-block { padding-top: 28px; margin-top: 8px; border-top: 1px solid var(--color-border); }
-.pricing-help-link.btn { margin-top: 4px; text-decoration: none; }
 
 /* ---------------- Layout shell for the form page ---------------- */
 .form-shell {
@@ -275,6 +220,18 @@ figure { margin: 0; }
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-muted);
+}
+/* Label and required/optional flag each get their own line (column, not
+   inline) so a flag never wraps against a long label inside a narrow grid
+   column — that used to shove the input down by a different amount per
+   field and break the row's shared baseline. The flag is plain bold text,
+   not a colored pill, in the same dark accent as .btn-primary/.field-inline-error. */
+.field-label-row { display: flex; flex-direction: column; gap: 2px; }
+.field-flag {
+  align-self: flex-end;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent-dark);
 }
 .field .field-note {
   font-size: 12px;

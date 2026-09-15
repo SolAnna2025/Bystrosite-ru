@@ -155,197 +155,37 @@ function handleStaticMap(req, res) {
   res.writeHead(404); res.end();
 }
 
-/* ---------------- Phone identity + finalize/credits model ----------------
+/* ---------------- Phone identity ----------------
    normalizePhone(): strip everything but digits, then keep only the last 10
    — so "+7 937 166-75-55", "89371667555" and "9371667555" all collapse to
    the same key regardless of how the 7/8/+7 prefix was written. This is the
-   same rule the DB's listings.agent_phone_normalized generated column and
-   phone_whitelist seed rows use (see supabase/migrations/0001_init.sql), so
-   a phone matches the whitelist the same way here and there.
+   same rule the DB's listings.agent_phone_normalized generated column uses
+   (see supabase/migrations/0001_init.sql).
 
-   The model (see supabase/migrations/0002_finalize_and_credits.sql):
-   creating a listing is always free and unlimited. Editing one is free and
-   unlimited too, right up until it's finalized (agent clicks "Поделиться
-   презентацией" or "Скачать PDF" — see handleListingFinalize). Finalizing
-   locks that one listing (listings.is_finalized); each listing gets exactly
-   one free finalization (listings.free_finalize_used), every one after that
-   spends one credit from the agent's own wallet (agents.package_credits,
-   shared across all of that phone's listings), unless an unlimited
-   subscription is active, in which case a listing never locks at all.
-   Credits/subscriptions are granted the same way is_paid/paid_tier already
-   are — an admin confirms a payment (QR + Telegram, per /pricing) and
-   updates the agents row by hand in the Table Editor; there's no automated
-   payment gateway here to wire up. */
+   Быстросайт is entirely free — creating, editing, finalizing (Share /
+   Download PDF) and reopening a listing are all unlimited and unlocked for
+   every phone number, no credits or subscriptions involved. The phone
+   number itself is still required on every listing: it's the tool's lead
+   database — every agent who uses it leaves their contact info behind. */
 function normalizePhone(phone) {
   return String(phone || '').replace(/\D/g, '').slice(-10);
 }
 
-/* Never log a full phone number or order_num (order_num embeds the phone's
-   normalized digits — see buildProdamusPayUrl) anywhere in this file.
-   Platform logs (Render's included) are themselves outside Russia, and
-   avoiding exactly that kind of durable copy of a phone number leaving the
-   country is the whole point of the Timeweb split above — masked to the
-   last 4 digits, which is enough to eyeball/correlate log lines by hand
-   without it being a usable phone number. */
+/* Never log a full phone number anywhere in this file. Platform logs
+   (Render's included) are themselves outside Russia, and avoiding exactly
+   that kind of durable copy of a phone number leaving the country is the
+   whole point of the Timeweb split above — masked to the last 4 digits,
+   which is enough to eyeball/correlate log lines by hand without it being a
+   usable phone number. */
 function maskPhone(phone) {
   var s = String(phone || '');
   return s.length >= 4 ? '***' + s.slice(-4) : '***';
 }
-function maskOrderNum(orderNum) {
-  return String(orderNum || '').replace(/\d{10}/, function (d) { return '***' + d.slice(-4); });
-}
 
-/* ---------------- Legacy (Supabase agents table) implementations ----------
-   Unchanged logic from before the Timeweb split — still exactly what runs
-   whenever TIMEWEB_DB_HOST isn't set, and the per-row fallback for any
-   listing that predates it (no agent_id). See billingKeyForRow() and the
-   tw*ById variants below for the Timeweb-backed replacements. */
-async function sbIsAgentUnlimited(normalized) {
-  if (!normalized) return false;
-  const wl = await supabaseRest('/phone_whitelist?phone_normalized=eq.' + encodeURIComponent(normalized) + '&select=phone_normalized');
-  if (wl.ok && (await wl.json()).length) return true;
-  const agent = await supabaseRest('/agents?phone_normalized=eq.' + encodeURIComponent(normalized) + '&select=subscription_until');
-  if (agent.ok) {
-    const rows = await agent.json();
-    if (rows.length && rows[0].subscription_until && new Date(rows[0].subscription_until) > new Date()) return true;
-  }
-  return false;
-}
-
-async function sbGetAgentCredits(normalized) {
-  if (!normalized) return 0;
-  const res = await supabaseRest('/agents?phone_normalized=eq.' + encodeURIComponent(normalized) + '&select=package_credits');
-  if (!res.ok) return 0;
-  const rows = await res.json();
-  return rows.length ? (rows[0].package_credits || 0) : 0;
-}
-
-async function sbSpendAgentCredit(normalized, currentCredits) {
-  const res = await supabaseRest(
-    '/agents?phone_normalized=eq.' + encodeURIComponent(normalized) + '&package_credits=eq.' + currentCredits,
-    { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ package_credits: currentCredits - 1 }) }
-  );
-  if (!res.ok) return false;
-  const rows = await res.json();
-  return rows.length > 0;
-}
-
-async function sbGetAgentFreeFinalizeUsed(normalized) {
-  if (!normalized) return false;
-  const res = await supabaseRest('/agents?phone_normalized=eq.' + encodeURIComponent(normalized) + '&select=free_finalize_used');
-  if (!res.ok) return false;
-  const rows = await res.json();
-  return rows.length ? !!rows[0].free_finalize_used : false;
-}
-
-async function sbClaimAgentFreeFinalize(normalized) {
-  const upd = await supabaseRest(
-    '/agents?phone_normalized=eq.' + encodeURIComponent(normalized) + '&free_finalize_used=eq.false',
-    { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ free_finalize_used: true }) }
-  );
-  if (upd.ok) {
-    const rows = await upd.json();
-    if (rows.length) return true;
-  }
-  const ins = await supabaseRest('/agents', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
-    body: JSON.stringify({ phone_normalized: normalized, free_finalize_used: true }),
-  });
-  if (!ins.ok) return false;
-  const insRows = await ins.json();
-  return insRows.length > 0;
-}
-
-/* ---------------- Timeweb (Moscow) implementations ----------------
-   Same semantics as the sb* functions above, backed by lib/timeweb.js
-   instead of the Supabase REST API. A real SQL connection makes the
-   optimistic-concurrency dance PostgREST needed (read, then a
-   conditional PATCH whose WHERE clause re-checks the value just read)
-   unnecessary — a single UPDATE...RETURNING is already atomic. */
-async function twIsAgentUnlimitedByPhone(normalized) {
-  if (!normalized) return false;
-  const wl = await timeweb.query('select 1 from phone_whitelist where phone_normalized = $1', [normalized]);
-  if (wl.rows.length) return true;
-  const agent = await timeweb.query('select subscription_until from agents where phone_normalized = $1', [normalized]);
-  return !!(agent.rows.length && agent.rows[0].subscription_until && new Date(agent.rows[0].subscription_until) > new Date());
-}
-
-async function twIsAgentUnlimitedById(agentId) {
-  const wl = await timeweb.query(
-    'select 1 from phone_whitelist w join agents a on a.phone_normalized = w.phone_normalized where a.agent_id = $1',
-    [agentId]
-  );
-  if (wl.rows.length) return true;
-  const agent = await timeweb.query('select subscription_until from agents where agent_id = $1', [agentId]);
-  return !!(agent.rows.length && agent.rows[0].subscription_until && new Date(agent.rows[0].subscription_until) > new Date());
-}
-
-async function twGetAgentCreditsByPhone(normalized) {
-  if (!normalized) return 0;
-  const res = await timeweb.query('select package_credits from agents where phone_normalized = $1', [normalized]);
-  return res.rows.length ? (res.rows[0].package_credits || 0) : 0;
-}
-
-async function twGetAgentCreditsById(agentId) {
-  const res = await timeweb.query('select package_credits from agents where agent_id = $1', [agentId]);
-  return res.rows.length ? (res.rows[0].package_credits || 0) : 0;
-}
-
-async function twSpendAgentCreditByPhone(normalized, currentCredits) {
-  const res = await timeweb.query(
-    'update agents set package_credits = package_credits - 1 where phone_normalized = $1 and package_credits = $2 returning agent_id',
-    [normalized, currentCredits]
-  );
-  return res.rows.length > 0;
-}
-
-async function twSpendAgentCreditById(agentId, currentCredits) {
-  const res = await timeweb.query(
-    'update agents set package_credits = package_credits - 1 where agent_id = $1 and package_credits = $2 returning agent_id',
-    [agentId, currentCredits]
-  );
-  return res.rows.length > 0;
-}
-
-async function twGetAgentFreeFinalizeUsedByPhone(normalized) {
-  if (!normalized) return false;
-  const res = await timeweb.query('select free_finalize_used from agents where phone_normalized = $1', [normalized]);
-  return res.rows.length ? !!res.rows[0].free_finalize_used : false;
-}
-
-async function twGetAgentFreeFinalizeUsedById(agentId) {
-  const res = await timeweb.query('select free_finalize_used from agents where agent_id = $1', [agentId]);
-  return res.rows.length ? !!res.rows[0].free_finalize_used : false;
-}
-
-/* Upsert-based claim: one statement either flips a fresh (or still-false)
-   row's free_finalize_used to true and returns it, or — if a concurrent
-   caller already claimed it — updates nothing and the WHERE clause in the
-   RETURNING-guarded UPDATE below reports that by returning zero rows.
-   ON CONFLICT targets the same unique index a plain phone-based insert
-   would use, so two brand-new claims racing each other still only let one
-   through, same guarantee sbClaimAgentFreeFinalize had via
-   resolution=ignore-duplicates. */
-async function twClaimAgentFreeFinalizeByPhone(normalized, phoneDisplay) {
-  const ins = await timeweb.query(
-    `insert into agents (phone, free_finalize_used) values ($1, true)
-     on conflict (phone_normalized) do update
-       set free_finalize_used = true
-       where agents.free_finalize_used = false
-     returning agent_id`,
-    [phoneDisplay || normalized]
-  );
-  return ins.rows.length > 0;
-}
-
-async function twClaimAgentFreeFinalizeById(agentId) {
-  const res = await timeweb.query(
-    'update agents set free_finalize_used = true where agent_id = $1 and free_finalize_used = false returning agent_id',
-    [agentId]
-  );
-  return res.rows.length > 0;
-}
+/* ---------------- Timeweb (Moscow) agent identity ----------------
+   Backed by lib/timeweb.js instead of the Supabase REST API — see the
+   Supabase/Timeweb split note near the top of this file. These are the
+   lead-database primitives: every listing's agent phone/name/photo. */
 
 /* Finds an existing agent by phone — never creates one. Used wherever a
    wrong guess must fail closed instead of silently creating a junk row
@@ -404,384 +244,11 @@ async function twGetAgentProfile(agentId) {
   };
 }
 
-/* ---------------- Dispatchers ----------------
-   Every call site below builds a key describing how it knows this
-   listing's owning agent — makeKey(phoneFromRow, row.agent_id) — and
-   these pick the right backend:
-     - Timeweb configured + an agent_id is known: query Timeweb by id
-       (the row itself never has to carry a phone number at all anymore).
-     - Timeweb configured but only a phone is known (a brand-new
-       submission, or a legacy row with no agent_id yet): query Timeweb
-       by phone.
-     - Timeweb not configured at all: the original Supabase-agents-table
-       behavior, unchanged. */
-function makeKey(phoneNormalized, agentId) {
-  return { phone: phoneNormalized || null, agentId: agentId || null };
-}
-
-async function isAgentUnlimited(key) {
-  if (timeweb.configured()) {
-    if (key.agentId) return twIsAgentUnlimitedById(key.agentId);
-    return twIsAgentUnlimitedByPhone(key.phone);
-  }
-  return sbIsAgentUnlimited(key.phone);
-}
-
-async function getAgentCredits(key) {
-  if (timeweb.configured()) {
-    if (key.agentId) return twGetAgentCreditsById(key.agentId);
-    return twGetAgentCreditsByPhone(key.phone);
-  }
-  return sbGetAgentCredits(key.phone);
-}
-
-async function spendAgentCredit(key, currentCredits) {
-  if (timeweb.configured()) {
-    if (key.agentId) return twSpendAgentCreditById(key.agentId, currentCredits);
-    return twSpendAgentCreditByPhone(key.phone, currentCredits);
-  }
-  return sbSpendAgentCredit(key.phone, currentCredits);
-}
-
-async function getAgentFreeFinalizeUsed(key) {
-  if (timeweb.configured()) {
-    if (key.agentId) return twGetAgentFreeFinalizeUsedById(key.agentId);
-    return twGetAgentFreeFinalizeUsedByPhone(key.phone);
-  }
-  return sbGetAgentFreeFinalizeUsed(key.phone);
-}
-
-async function claimAgentFreeFinalize(key, phoneDisplay) {
-  if (timeweb.configured()) {
-    if (key.agentId) return twClaimAgentFreeFinalizeById(key.agentId);
-    return twClaimAgentFreeFinalizeByPhone(key.phone, phoneDisplay);
-  }
-  return sbClaimAgentFreeFinalize(key.phone);
-}
-
-/* ---------------- Prodamus (payform.ru) payments ----------------
-   Replaces the old "fixed QR + Telegram, admin edits the agents row by
-   hand" flow above with a real gateway: /api/pricing/pay asks payform.ru
-   for a checkout link for one plan + phone, and payform's own webhook
-   (/api/prodamus-webhook) credits that phone's agents row automatically
-   once it's actually paid. Two things must be set up in the payform
-   cabinet for this to work at all: a secret key (PRODAMUS_SECRET_KEY
-   below) and the notification URL pointed at
-   https://<this server>/api/prodamus-webhook. Reference docs:
-   https://help.prodamus.ru/payform/integracii/rest-api — the exact
-   signing algorithm below was cross-checked against the reference
-   implementation at https://github.com/dnagikh/python-prodamus, since
-   Prodamus's own docs don't spell out the JSON-canonicalization step. */
-const PRODAMUS_DOMAIN = 'proffbroker.payform.ru';
-const PRODAMUS_SECRET_KEY = process.env.PRODAMUS_SECRET_KEY || '';
-
-const PRICING_PLANS = {
-  single: { name: 'Разовая презентация', price: 250, credits: 1 },
-  pack5: { name: '5 презентаций', price: 1000, credits: 5 },
-  pack20: { name: '20 презентаций', price: 3000, credits: 20 },
-  unlimited: { name: 'Безлимит на 30 дней', price: 10000, subscriptionDays: 30 },
-};
-
-/* Prodamus signs both outgoing link params and incoming webhooks the same
-   way: recursively sort every object's keys, compact-JSON-encode it (PHP's
-   json_encode(..., sorted keys) equivalent — a JS object whose keys are
-   exactly "0".."n-1" encodes as a JSON array, same as a PHP list would),
-   then HMAC-SHA256-hex the result with the secret key. */
-function prodamusStringify(value) {
-  if (value === null || typeof value !== 'object') return JSON.stringify(String(value));
-  var keys = Object.keys(value);
-  var isList = keys.every(function (k, i) { return k === String(i); });
-  if (isList) return '[' + keys.map(function (k) { return prodamusStringify(value[k]); }).join(',') + ']';
-  return '{' + keys.slice().sort().map(function (k) {
-    return JSON.stringify(k) + ':' + prodamusStringify(value[k]);
-  }).join(',') + '}';
-}
-
-function prodamusSign(obj) {
-  return crypto.createHmac('sha256', PRODAMUS_SECRET_KEY).update(prodamusStringify(obj), 'utf8').digest('hex');
-}
-
-/* Turns payform's flat PHP-style webhook fields (order_num=..,
-   products[0][name]=..) into the nested structure prodamusStringify()
-   expects — mirrors PHP's own bracket-key parsing of $_POST. */
-function setProdamusField(root, key, value) {
-  var m = key.match(/^([^\[\]]+)((?:\[[^\]]*\])*)$/);
-  if (!m) { root[key] = value; return; }
-  var path = [m[1]];
-  var re = /\[([^\]]*)\]/g, mm;
-  while ((mm = re.exec(m[2]))) path.push(mm[1]);
-  var node = root;
-  for (var i = 0; i < path.length - 1; i++) {
-    if (typeof node[path[i]] !== 'object' || node[path[i]] === null) node[path[i]] = {};
-    node = node[path[i]];
-  }
-  node[path[path.length - 1]] = value;
-}
-
-function parseProdamusBody(raw, contentType) {
-  var entries = [];
-  var boundaryMatch = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType || '');
-  if (boundaryMatch) {
-    var boundary = boundaryMatch[1] || boundaryMatch[2];
-    raw.split('--' + boundary).forEach(function (part) {
-      var nameMatch = /name="([^"]+)"/i.exec(part);
-      var sepIdx = part.indexOf('\r\n\r\n');
-      if (!nameMatch || sepIdx === -1) return;
-      var value = part.slice(sepIdx + 4).replace(/\r\n--?$/, '').replace(/\r\n$/, '');
-      entries.push([nameMatch[1], value]);
-    });
-  } else {
-    new URLSearchParams(raw).forEach(function (v, k) { entries.push([k, v]); });
-  }
-  var root = {};
-  entries.forEach(function (pair) { setProdamusField(root, pair[0], pair[1]); });
-  return root;
-}
-
-/* Builds a payform.ru checkout URL for one plan + phone. order_id is our
-   own reference (payform echoes it back as order_num in the webhook) —
-   encoding plan + phone directly into it means no extra "pending order"
-   table is needed to know what to credit when the webhook comes back.
-
-   No urlReturn/urlSuccess: this account's proffbroker.payform.ru rejects
-   the request with a bare 400 the instant *either* field is present, for
-   *any* URL value (even payform's own domain) — confirmed by testing, not
-   a guess. Prodamus migrated this account to their newer "Prodamus.Pay"
-   platform, which apparently requires a redirect domain to be registered
-   somewhere first (their own manually-configured "Платёжные ссылки"
-   product has a UI toggle for this; the classic do=pay REST endpoint used
-   here has no equivalent field pointed at yet). Until Prodamus support
-   clarifies how to register one for this endpoint, the agent lands on
-   Prodamus's own generic success page after paying and returns to the
-   site manually (browser back) — crediting itself doesn't depend on this
-   at all, see processProdamusPayment. */
-function buildProdamusPayUrl(planKey, phoneNormalized) {
-  var plan = PRICING_PLANS[planKey];
-  var orderId = 'bsp-' + planKey + '-' + phoneNormalized + '-' + Date.now();
-  var params = {
-    do: 'pay',
-    order_id: orderId,
-    customer_phone: '+7' + phoneNormalized,
-    products: { 0: { name: plan.name, price: String(plan.price), quantity: '1' } },
-  };
-  params.signature = prodamusSign(params);
-
-  var qs = [];
-  function flatten(prefix, value) {
-    if (value && typeof value === 'object') {
-      Object.keys(value).forEach(function (k) { flatten(prefix + '[' + k + ']', value[k]); });
-    } else {
-      qs.push(encodeURIComponent(prefix) + '=' + encodeURIComponent(value));
-    }
-  }
-  Object.keys(params).forEach(function (k) { flatten(k, params[k]); });
-  return 'https://' + PRODAMUS_DOMAIN + '/?' + qs.join('&');
-}
-
-function handlePricingPay(req, res) {
-  readJsonBody(req, 2e3, function (err, body) {
-    if (err) { sendJson(res, 400, { error: 'bad request' }); return; }
-    if (!PRODAMUS_SECRET_KEY) { sendJson(res, 501, { error: 'payments not configured' }); return; }
-    var plan = body && PRICING_PLANS[body.plan];
-    if (!plan) { sendJson(res, 400, { error: 'unknown plan' }); return; }
-    var normalized = normalizePhone(body && body.phone);
-    if (normalized.length !== 10) { sendJson(res, 400, { error: 'invalid phone' }); return; }
-
-    // body.returnPath (js/app.js) is unused for now — see buildProdamusPayUrl
-    // for why urlReturn/urlSuccess aren't sent at all currently.
-    var url = buildProdamusPayUrl(body.plan, normalized);
-    sendJson(res, 200, { url: url });
-  });
-}
-
-/* Timeweb version of creditAgentPlan below: a single atomic upsert instead
-   of a read-then-conditional-PATCH retry loop, since a real SQL connection
-   doesn't need PostgREST's optimistic-concurrency dance to do a safe
-   read-modify-write — Postgres's own row lock inside the UPDATE/INSERT
-   statement already serializes two concurrent callers for the same phone. */
-async function twCreditAgentPlan(phone, phoneDisplay, plan) {
-  // `phone` is only ever set from the INSERT branch's value (a webhook only
-  // ever carries the normalized digits, never how the agent originally
-  // typed it) — deliberately left untouched on conflict so a payment never
-  // clobbers a nicer display string the listing form already stored.
-  if (plan.subscriptionDays) {
-    await timeweb.query(
-      `insert into agents (phone, subscription_until)
-       values ($1, now() + ($2 || ' days')::interval)
-       on conflict (phone_normalized) do update set
-         subscription_until = (case
-           when agents.subscription_until is not null and agents.subscription_until > now()
-             then agents.subscription_until + ($2 || ' days')::interval
-           else now() + ($2 || ' days')::interval
-         end)`,
-      [phoneDisplay || phone, plan.subscriptionDays]
-    );
-  } else {
-    await timeweb.query(
-      `insert into agents (phone, package_credits)
-       values ($1, $2)
-       on conflict (phone_normalized) do update set
-         package_credits = agents.package_credits + $2`,
-      [phoneDisplay || phone, plan.credits]
-    );
-  }
-}
-
-/* Grants one plan's credits/subscription-days to a phone's agents row.
-   Used to be a plain "read package_credits/subscription_until, compute the
-   new value, PATCH it" — which races the same way the pre-fix free-finalize
-   check did: two webhook deliveries for two *different* orders on the same
-   phone, close together (e.g. an agent buying two packs back to back), can
-   both read the old value before either write lands, and the second write
-   silently clobbers the first — one whole paid-for credit grant lost with
-   no error anywhere. Retries a small, bounded number of times against an
-   optimistic-concurrency PATCH (only succeeds if the row still matches
-   what was just read — same technique as spendAgentCredit/
-   claimAgentFreeFinalize) rather than trusting a single read to still be
-   current by the time the write lands. Only the Supabase-fallback path
-   (Timeweb not configured) still needs this retry loop — see
-   twCreditAgentPlan above for the Timeweb version. */
-async function sbCreditAgentPlan(phone, plan) {
-  for (var attempt = 0; attempt < 5; attempt++) {
-    const agentRes = await supabaseRest('/agents?phone_normalized=eq.' + encodeURIComponent(phone) + '&select=package_credits,subscription_until');
-    const rows = agentRes.ok ? await agentRes.json() : [];
-    const existing = rows.length ? rows[0] : null;
-
-    var patch, matchFilter;
-    if (plan.subscriptionDays) {
-      var base = (existing && existing.subscription_until && new Date(existing.subscription_until) > new Date())
-        ? new Date(existing.subscription_until) : new Date();
-      base.setDate(base.getDate() + plan.subscriptionDays);
-      patch = { subscription_until: base.toISOString() };
-      matchFilter = '&subscription_until=' + (existing && existing.subscription_until
-        ? 'eq.' + encodeURIComponent(existing.subscription_until) : 'is.null');
-    } else {
-      patch = { package_credits: (existing ? existing.package_credits || 0 : 0) + plan.credits };
-      matchFilter = '&package_credits=eq.' + (existing ? existing.package_credits || 0 : 0);
-    }
-
-    if (existing) {
-      const upd = await supabaseRest('/agents?phone_normalized=eq.' + encodeURIComponent(phone) + matchFilter, {
-        method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(patch),
-      });
-      if (upd.ok) {
-        const updRows = await upd.json();
-        if (updRows.length) return; // landed cleanly against the row we just read
-      }
-      // Someone else updated this row between the read and the write above
-      // — retry with a fresh read rather than silently losing this grant.
-    } else {
-      const ins = await supabaseRest('/agents', {
-        method: 'POST',
-        headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
-        body: JSON.stringify(Object.assign({ phone_normalized: phone }, patch)),
-      });
-      if (ins.ok) {
-        const insRows = await ins.json();
-        if (insRows.length) return; // row didn't exist yet; this call created it
-      }
-      // Someone else created the row concurrently — retry; `existing` will
-      // be found next time round and this becomes the PATCH branch.
-    }
-  }
-  throw new Error('sbCreditAgentPlan: gave up after retries for phone ' + maskPhone(phone));
-}
-
-async function creditAgentPlan(phone, phoneDisplay, plan) {
-  if (timeweb.configured()) return twCreditAgentPlan(phone, phoneDisplay, plan);
-  return sbCreditAgentPlan(phone, plan);
-}
-
-/* Only ever called after the signature has already checked out — see
-   handleProdamusWebhook. Idempotent: payform can (and does) resend the
-   same successful-payment notification, and the payments-table insert
-   below is what turns a resend into a no-op instead of double-crediting
-   the agent's wallet. Once Timeweb is configured this dedup row (it holds
-   the same phone_normalized as agents/phone_whitelist) is written there
-   instead of Supabase — see timeweb/migrations/0001_init.sql. */
-async function processProdamusPayment(nested) {
-  var status = String(nested.payment_status || '').toLowerCase();
-  var orderNum = String(nested.order_num || nested.order_id || '');
-  console.log('prodamus webhook: order=' + maskOrderNum(orderNum) + ' status=' + status + ' sum=' + nested.sum);
-  if (status !== 'success') return;
-
-  var m = orderNum.match(/^bsp-(single|pack5|pack20|unlimited)-(\d{10})-\d+$/);
-  if (!m) { console.error('prodamus webhook: unrecognized order_num', maskOrderNum(orderNum)); return; }
-  var planKey = m[1], phone = m[2];
-  var plan = PRICING_PLANS[planKey];
-
-  if (timeweb.configured()) {
-    try {
-      await timeweb.query(
-        'insert into payments (order_num, phone_normalized, plan, sum) values ($1, $2, $3, $4)',
-        [orderNum, phone, planKey, nested.sum || null]
-      );
-    } catch (e) {
-      if (e && e.code === '23505') { console.log('prodamus webhook: duplicate delivery, already credited:', maskOrderNum(orderNum)); return; }
-      throw e;
-    }
-  } else {
-    var insert = await supabaseRest('/payments', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ order_num: orderNum, phone_normalized: phone, plan: planKey, sum: nested.sum || null }),
-    });
-    if (!insert.ok) {
-      if (insert.status === 409) { console.log('prodamus webhook: duplicate delivery, already credited:', maskOrderNum(orderNum)); return; }
-      throw new Error('payments insert failed: ' + insert.status);
-    }
-  }
-
-  await creditAgentPlan(phone, '+7' + phone, plan);
-  console.log('prodamus webhook: credited phone=' + maskPhone(phone) + ' plan=' + planKey);
-}
-
-function handleProdamusWebhook(req, res) {
-  var raw = '';
-  var tooLarge = false;
-  req.on('data', function (chunk) {
-    raw += chunk;
-    if (!tooLarge && raw.length > 1e6) { tooLarge = true; req.destroy(); }
-  });
-  req.on('end', function () {
-    if (tooLarge) { res.writeHead(400); res.end(); return; }
-    if (!PRODAMUS_SECRET_KEY) {
-      console.error('prodamus webhook received but PRODAMUS_SECRET_KEY is not set — ignoring');
-      res.writeHead(501); res.end(); return;
-    }
-    var nested = parseProdamusBody(raw, req.headers['content-type']);
-    var receivedSign = String(req.headers['sign'] || '');
-    var expectedSign = prodamusSign(nested);
-    if (!receivedSign || expectedSign.toLowerCase() !== receivedSign.toLowerCase()) {
-      console.warn('prodamus webhook: signature mismatch for order', maskOrderNum(nested.order_num), { expectedSign: expectedSign, receivedSign: receivedSign });
-      res.writeHead(400); res.end(); return;
-    }
-    processProdamusPayment(nested).then(function () {
-      res.writeHead(200); res.end('OK');
-    }).catch(function (e) {
-      // Signature was valid; the failure is on our side (e.g. Supabase
-      // hiccup) — 200 anyway so payform doesn't retry forever on something
-      // a retry won't fix. Logged loudly for manual follow-up.
-      console.error('prodamus webhook processing failed for order', maskOrderNum(nested.order_num), e);
-      res.writeHead(200); res.end('OK');
-    });
-  });
-}
-
 async function getListingRow(id) {
-  const res = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=id,agent_phone,agent_id,is_finalized,free_finalize_used,photos,logo_path,agent_photo_path,agent_qr');
+  const res = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=id,agent_phone,agent_id,is_finalized,photos,logo_path,agent_photo_path,agent_qr');
   if (!res.ok) return null;
   const rows = await res.json();
   return rows.length ? rows[0] : null;
-}
-
-/* This row's billing key, for isAgentUnlimited/getAgentCredits/etc above —
-   prefers agent_id (Timeweb) whenever both Timeweb is configured and the
-   row has one; falls back to the row's own agent_phone otherwise (either
-   Timeweb-by-phone, for a legacy row with no agent_id yet, or the original
-   Supabase-agents-table behavior if Timeweb isn't configured at all). */
-function billingKeyForRow(row) {
-  return makeKey(normalizePhone(row.agent_phone), row.agent_id);
 }
 
 /* ---------------- Public listing view (GET /api/listings/:id/view) --------
@@ -804,10 +271,6 @@ async function handlePublicListingView(req, res, id) {
     const rows = await res2.json();
     if (!rows.length) { sendJson(res, 200, null); return; }
     const row = rows[0];
-
-    const unlimited = await isAgentUnlimited(billingKeyForRow(row));
-    const isExpired = !!row.expires_at && new Date(row.expires_at) < new Date() && !row.paid_via_credit && !unlimited;
-    if (isExpired) { sendJson(res, 200, { expired: true }); return; }
 
     if (timeweb.configured() && row.agent_id) {
       row.agent_phone = await twGetAgentPhoneDisplay(row.agent_id);
@@ -887,38 +350,23 @@ function handleListingAccess(req, res, id) {
   (async function () {
     const row = await getListingRow(id);
     if (!row) { sendJson(res, 404, { error: 'not found' }); return; }
-    const key = billingKeyForRow(row);
-    const unlimited = await isAgentUnlimited(key);
-    const credits = unlimited ? 0 : await getAgentCredits(key);
-    sendJson(res, 200, {
-      isFinalized: !!row.is_finalized,
-      freeFinalizeUsed: !!row.free_finalize_used,
-      unlimited: unlimited,
-      credits: credits,
-      // Same rule handleCreateListing's edit gate uses: locked only if
-      // finalized AND neither unlimited nor a credit in the wallet.
-      canEdit: !row.is_finalized || unlimited || credits > 0,
-    });
+    // Everything is free — a finalized listing can always be reopened/edited.
+    sendJson(res, 200, { isFinalized: !!row.is_finalized, canEdit: true });
   })().catch(function (e) {
     console.error('listing-access check failed:', e);
-    sendJson(res, 200, { isFinalized: false, freeFinalizeUsed: false, unlimited: false, credits: 0, canEdit: true });
+    sendJson(res, 200, { isFinalized: false, canEdit: true });
   });
 }
 
 /* ---------------- Reopen a finalized listing for editing ----------------
-   Free (per the answered design question): having a credit or an active
-   subscription is what unlocks editing again — the credit itself is only
-   actually spent later, at the next finalize (see handleListingFinalize).
-   Does nothing (still ok:true) if the listing wasn't locked to begin with. */
+   Free and unlimited — reopening never needs anything beyond the listing
+   itself existing. Does nothing (still ok:true) if it wasn't locked to
+   begin with. */
 function handleListingReopen(req, res, id) {
   (async function () {
     const row = await getListingRow(id);
     if (!row) { sendJson(res, 404, { error: 'not found' }); return; }
     if (!row.is_finalized) { sendJson(res, 200, { ok: true }); return; }
-    const key = billingKeyForRow(row);
-    const unlimited = await isAgentUnlimited(key);
-    const credits = unlimited ? 0 : await getAgentCredits(key);
-    if (!unlimited && credits <= 0) { sendJson(res, 200, { ok: false, needsPayment: true }); return; }
     const upd = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id), {
       method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ is_finalized: false }),
     });
@@ -931,85 +379,25 @@ function handleListingReopen(req, res, id) {
 }
 
 /* ---------------- Finalize (Share / Download PDF) ----------------
-   Two-phase so the client can show the right confirmation *before* anything
-   is locked or spent: { confirm: false } (or omitted) is a dry run that
-   reports what would happen without changing anything; { confirm: true }
-   actually performs it. The server re-derives everything from the DB on
-   both calls rather than trusting whatever the client claims the cost is. */
+   Free and unlimited: locks the listing (listings.is_finalized) the first
+   time, so a shared /p/<id> link keeps showing what was actually shared
+   rather than whatever the agent happens to be mid-edit on right now.
+   Already-finalized is a no-op success — Share and PDF are just two
+   independent, always-available ways to fetch the same presentation. */
 function handleListingFinalize(req, res, id) {
-  readJsonBody(req, 1e3, function (err, body) {
-    const confirm = !err && body && body.confirm === true;
-    (async function () {
-      const row = await getListingRow(id);
-      if (!row) { sendJson(res, 404, { error: 'not found' }); return; }
-      const key = billingKeyForRow(row);
-      const unlimited = await isAgentUnlimited(key);
-
-      if (unlimited) {
-        // "is_finalized не устанавливается никогда" — no lock, no lookup of
-        // free/credit state, no confirmation needed; just let it through.
-        sendJson(res, 200, { ok: true, finalized: true, unlimited: true });
-        return;
-      }
-      if (row.is_finalized) {
-        // Already finalized *and nothing has changed since* (the only way
-        // back to is_finalized:false is an explicit, credit-gated reopen —
-        // see handleListingReopen/handleCreateListing) — so Share and
-        // PDF are just two independent, always-available ways to fetch the
-        // same already-finalized presentation, not a spend of the same
-        // one-time resource. Previously this branch blocked the *second*
-        // one of them (e.g. PDF after Share had already finalized it),
-        // even on a first, still-free round — that "or-or" between the two
-        // actions is exactly what this now avoids.
-        sendJson(res, 200, { ok: true, finalized: true });
-        return;
-      }
-      if (!confirm) {
-        // Dry run: a plain read is fine here — nothing is spent yet, and
-        // the real decision (does this phone *still* have its free
-        // finalize by the time confirm:true actually arrives) happens
-        // atomically below regardless of what this hint said.
-        const phoneFreeUsed = await getAgentFreeFinalizeUsed(key);
-        if (!phoneFreeUsed) { sendJson(res, 200, { ok: false, needsConfirm: true, cost: 'free' }); return; }
-      } else {
-        // confirm:true — actually try to spend the phone's free finalize,
-        // atomically (see claimAgentFreeFinalize). Only reached here if
-        // it's still unclaimed *at this exact moment*; falls through to
-        // the credit path below if not (already used, or a concurrent
-        // finalize for another listing on this phone just won the race).
-        const claimed = await claimAgentFreeFinalize(key, row.agent_phone);
-        if (claimed) {
-          const upd = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id), {
-            method: 'PATCH', headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify({ is_finalized: true, free_finalize_used: true }),
-          });
-          if (!upd.ok) { sendJson(res, 500, { error: 'finalize failed' }); return; }
-          sendJson(res, 200, { ok: true, finalized: true });
-          return;
-        }
-      }
-      const credits = await getAgentCredits(key);
-      if (credits <= 0) { sendJson(res, 200, { ok: false, needsPayment: true }); return; }
-      // credits is the *current* (pre-spend) balance — the confirm modal's
-      // copy ("...останется {credits}" / "{credits} left after") promises
-      // the balance *after* this spend, so subtract the 1 this finalize is
-      // about to cost.
-      if (!confirm) { sendJson(res, 200, { ok: false, needsConfirm: true, cost: 'credit', creditsRemaining: credits - 1 }); return; }
-      const spent = await spendAgentCredit(key, credits);
-      if (!spent) { sendJson(res, 409, { error: 'credit already spent elsewhere, retry' }); return; }
-      // Paid for with a real credit now — permanent from this point on,
-      // regardless of whatever expires_at was set to at creation (see
-      // 0003_listing_expiry.sql).
-      const upd = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id), {
-        method: 'PATCH', headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ is_finalized: true, paid_via_credit: true, expires_at: null }),
-      });
-      if (!upd.ok) { sendJson(res, 500, { error: 'finalize failed' }); return; }
-      sendJson(res, 200, { ok: true, finalized: true });
-    })().catch(function (e) {
-      console.error('listing-finalize failed:', e);
-      sendJson(res, 500, { error: 'finalize failed' });
+  (async function () {
+    const row = await getListingRow(id);
+    if (!row) { sendJson(res, 404, { error: 'not found' }); return; }
+    if (row.is_finalized) { sendJson(res, 200, { ok: true, finalized: true }); return; }
+    const upd = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ is_finalized: true }),
     });
+    if (!upd.ok) { sendJson(res, 500, { error: 'finalize failed' }); return; }
+    sendJson(res, 200, { ok: true, finalized: true });
+  })().catch(function (e) {
+    console.error('listing-finalize failed:', e);
+    sendJson(res, 500, { error: 'finalize failed' });
   });
 }
 
@@ -1062,7 +450,7 @@ async function uploadDataUrl(id, relPath, dataUrl) {
   return objectPath;
 }
 
-const REQUIRED_LISTING_FIELDS = ['title', 'locationName', 'lat', 'lng', 'houseArea', 'bedrooms', 'bathrooms', 'agentPhone'];
+const REQUIRED_LISTING_FIELDS = ['title', 'agentName', 'agentPhone'];
 
 function handleCreateListing(req, res) {
   // 15MB used to be the cap here, but a real listing's own photos (not the
@@ -1085,25 +473,27 @@ function handleCreateListing(req, res) {
     const missing = REQUIRED_LISTING_FIELDS.filter(function (k) {
       return listing[k] === undefined || listing[k] === null || listing[k] === '';
     });
-    if (missing.length) {
+    // Price is "sale OR rent", not a fixed field name — same one-of-two rule
+    // enforced client-side in js/app.js's updateRequiredHighlights().
+    const missingPrice = (listing.salePrice === undefined || listing.salePrice === null)
+      && (listing.rentPrice === undefined || listing.rentPrice === null);
+    if (missing.length || missingPrice) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'missing fields', fields: missing }));
+      res.end(JSON.stringify({ error: 'missing fields', fields: missingPrice ? missing.concat(['salePrice or rentPrice']) : missing }));
       return;
     }
 
     // listing.id present = editing an existing listing in place (same
-    // /p/<id> link throughout); absent = a brand-new listing, always
-    // allowed regardless of credits (see 0002_finalize_and_credits.sql).
-    // An existing, *finalized* listing can only be edited if the owning
-    // phone has a credit or an active subscription — same gate as
-    // handleListingReopen, checked again here since a resubmit is itself
-    // a form of "reopening" it. Reusing an id doesn't reset its finalize
+    // /p/<id> link throughout); absent = a brand-new listing. Both are
+    // always free and unlimited. An existing, *finalized* listing resubmit
+    // is itself a form of "reopening" it (same as handleListingReopen) —
+    // always allowed, never gated. Reusing an id doesn't reset its finalize
     // state; only handleListingFinalize/handleListingReopen do that.
     //
     // Wrapped in one try from here on (not just around the photo-upload/
     // DB-write section below) because the Timeweb agent-linking calls
-    // just below (ensureAgentByPhone, twFindAgentIdByPhone, isAgentUnlimited)
-    // are just as capable of throwing (bad credentials, network hiccup) as
+    // just below (ensureAgentByPhone, twFindAgentIdByPhone) are just as
+    // capable of throwing (bad credentials, network hiccup) as
     // anything in the photo-upload section — and this function's caller
     // (readJsonBody) never wraps or awaits this async callback, so an
     // exception thrown outside a try here becomes an unhandled promise
@@ -1153,18 +543,8 @@ function handleCreateListing(req, res) {
         return;
       }
       if (existing.is_finalized) {
-        const key = billingKeyForRow(existing);
-        const unlimited = await isAgentUnlimited(key);
-        const credits = unlimited ? 0 : await getAgentCredits(key);
-        if (!unlimited && credits <= 0) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'finalized', blocked: true }));
-          return;
-        }
-        // They have a credit or subscription: saving this edit is itself
-        // what reopens it (free — the credit is only spent at the next
-        // finalize, see handleListingFinalize), so the resulting deck no
-        // longer reads as locked.
+        // Saving this edit is itself what reopens it — free, unlimited —
+        // so the resulting deck no longer reads as locked.
         reopening = true;
       }
       // A legacy row (created before Timeweb was configured, so it has no
@@ -1177,17 +557,6 @@ function handleCreateListing(req, res) {
       }
     } else if (timeweb.configured()) {
       agentId = await ensureAgentByPhone(normalizePhone(listing.agentPhone), listing.agentPhone);
-    }
-
-    // A brand-new free-tier listing gets a 30-day clock (see
-    // 0003_listing_expiry.sql) — an agent who's already unlimited at
-    // creation time never needs one. Set once, here, at creation; never
-    // touched again except by handleListingFinalize when a credit pays
-    // for this specific listing (which clears it for good).
-    let expiresAt = null;
-    if (!isUpdate) {
-      const unlimitedAtCreation = await isAgentUnlimited(makeKey(normalizePhone(listing.agentPhone), agentId));
-      if (!unlimitedAtCreation) expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     }
 
       // On an update, mapRowToListing (js/app.js) sends every untouched
@@ -1293,6 +662,8 @@ function handleCreateListing(req, res) {
         elevators: listing.elevators,
         parking: listing.parking,
         infrastructure: listing.infrastructure,
+        community_info: listing.communityInfo,
+        building_info: listing.buildingInfo,
         nearby: listing.nearby,
         management_company: listing.managementCompany,
         cam_fee: listing.camFee,
@@ -1307,9 +678,8 @@ function handleCreateListing(req, res) {
         agent_name: agentId ? null : listing.agentName,
         // Once Timeweb is configured, agent_id is the row's real identity
         // link and the raw phone is deliberately never (re)written into
-        // Supabase — see billingKeyForRow / handlePublicListingView for how
-        // both billing checks and the public display of this number are
-        // resolved from agent_id instead, server-side.
+        // Supabase — see handlePublicListingView for how the public display
+        // of this number is resolved from agent_id instead, server-side.
         agent_id: agentId,
         agent_phone: agentId ? null : listing.agentPhone,
         agent_photo_path: agentPhotoPath,
@@ -1318,16 +688,10 @@ function handleCreateListing(req, res) {
         photos,
       };
       if (!isUpdate) {
-        // Payment is confirmed manually (QR + Telegram, per the /pricing
-        // screen) — a listing is always created as free/tier 0 here.
-        // Whoever confirms a payment flips these two columns directly
-        // (Table Editor, or a future admin endpoint), same as today's
-        // manual "проверка платежа" step. Left out of an update's PATCH
-        // body entirely (below) so re-submitting the form never resets an
-        // already-paid listing back to free.
+        // Everything is free — no payment/tier/expiry to track.
         row.is_paid = false;
         row.paid_tier = 0;
-        row.expires_at = expiresAt;
+        row.expires_at = null;
         // Fixed once, here, at creation — see 0005_language_and_edit_lockdown.sql.
         // Left out of an update's PATCH body entirely (same reasoning as
         // is_paid/paid_tier above) so re-submitting the form in whatever
@@ -1449,14 +813,6 @@ const server = http.createServer((req, res) => {
     handleCreateListing(req, res);
     return;
   }
-  if (req.method === 'POST' && req.url === '/api/pricing/pay') {
-    handlePricingPay(req, res);
-    return;
-  }
-  if (req.method === 'POST' && req.url === '/api/prodamus-webhook') {
-    handleProdamusWebhook(req, res);
-    return;
-  }
   const actionMatch = req.url.split('?')[0].match(LISTING_ACTION_RE);
   if (actionMatch && (req.method === 'POST' || req.method === 'GET')) {
     const id = actionMatch[1], action = actionMatch[2];
@@ -1493,8 +849,6 @@ const server = http.createServer((req, res) => {
   // .view divs), so it needs this explicit rewrite rather than relying on
   // the catch-all "unknown path -> index.html" fallback below.
   if (urlPath === '/privacy') urlPath = '/privacy.html';
-  if (urlPath === '/oferta') urlPath = '/oferta.html';
-  if (urlPath === '/payment-consent') urlPath = '/payment-consent.html';
 
   // Everything this server needs to serve as a plain static file lives
   // under one of these — an *allowlist*, not a denylist, because the
@@ -1503,11 +857,11 @@ const server = http.createServer((req, res) => {
   // (verbatim, no auth) to any visitor, and so did /package.json,
   // /.env.example, and every migration under /supabase/ — full backend
   // source, DB schema, and config, all publicly downloadable, confirmed
-  // live in production before this fix. Only these four top-level HTML
-  // pages and these three asset directories are meant to be public;
-  // everything else (including future files someone drops in root) falls
-  // through to the SPA fallback below, same as any other 404 would.
-  const PUBLIC_ROOT_FILES = new Set(['/index.html', '/privacy.html', '/oferta.html', '/payment-consent.html']);
+  // live in production before this fix. Only these top-level HTML pages
+  // and these three asset directories are meant to be public; everything
+  // else (including future files someone drops in root) falls through to
+  // the SPA fallback below, same as any other 404 would.
+  const PUBLIC_ROOT_FILES = new Set(['/index.html', '/privacy.html']);
   const PUBLIC_DIR_PREFIXES = ['/css/', '/js/', '/assets/'];
   const publiclyServable = PUBLIC_ROOT_FILES.has(urlPath) || PUBLIC_DIR_PREFIXES.some(function (p) { return urlPath.indexOf(p) === 0; });
 
@@ -1564,15 +918,12 @@ const server = http.createServer((req, res) => {
 server.listen(port, () => {
   console.log('Быстросайт dev server: http://localhost:' + port + '/new-listing');
   if (!supabaseConfigured()) {
-    console.log('  (Supabase not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; /api/listings will 501 without it, including the finalize/credits endpoints)');
+    console.log('  (Supabase not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; /api/listings will 501 without it)');
   }
   if (!YANDEX_STATIC_MAPS_API_KEY && !GEOAPIFY_API_KEY && !GOOGLE_MAPS_API_KEY) {
     console.log('  (No YANDEX_STATIC_MAPS_API_KEY, GEOAPIFY_API_KEY or GOOGLE_MAPS_API_KEY is set — PDF export will fall back to a text-only Location slide instead of a static map image)');
   }
-  if (!PRODAMUS_SECRET_KEY) {
-    console.log('  (PRODAMUS_SECRET_KEY is not set — /pricing payments will 501; set it and point the payform.ru notification URL at /api/prodamus-webhook)');
-  }
   if (!timeweb.configured()) {
-    console.log('  (Timeweb not configured — set TIMEWEB_DB_HOST/NAME/USER/PASSWORD; until then, agent phone numbers/whitelist/credits keep living in Supabase exactly as before)');
+    console.log('  (Timeweb not configured — set TIMEWEB_DB_HOST/NAME/USER/PASSWORD; until then, agent phone numbers keep living in Supabase exactly as before)');
   }
 });

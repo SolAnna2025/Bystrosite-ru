@@ -29,9 +29,12 @@ window.BSI18n = (function () {
       fPropertyTypeLabel: 'Тип',
       optApartment: 'Квартира', optHouse: 'Дом', optCottage: 'Коттедж',
 
+      fieldFlagRequired: 'Обязательное поле',
+      fieldFlagOptional: 'Необязательное поле',
+
       secAboutTitle: 'Об объекте',
       secAboutHint: 'Название и свободное описание для карточки и обложки презентации',
-      fTitleLabel: 'Название объекта *',
+      fTitleLabel: 'Название объекта',
       fTitlePh: 'напр. Коттедж «Аврора»',
       fDescriptionLabel: 'Описание',
       fDescriptionPh: 'напр. Одноэтажный коттедж с приватным бассейном в закрытом посёлке в 7 минутах от моря в Сочи. Полностью меблирован, панорамное остекление гостиной, средиземноморский сад по периметру участка.',
@@ -44,14 +47,14 @@ window.BSI18n = (function () {
       fClosingPhrasePh: 'напр. Резиденция ждёт своего часа',
 
       secLocationTitle: 'Локация',
-      secLocationHint: 'Адрес и координаты — по ним построим карту на слайде локации',
-      fLocationNameLabel: 'Локация *',
+      secLocationHint: 'Необязательно. Адрес и координаты — по ним построим карту на слайде локации; если координаты не указаны (обе широта и долгота), слайд локации в презентации не появится',
+      fLocationNameLabel: 'Локация',
       fLocationNamePh: 'напр. Хоста, Сочи, Краснодарский край',
       fCoordsPasteLabel: 'Вставить координаты из Яндекс.Карт',
       fCoordsPastePh: 'напр. 43.5397321, 39.8944543',
       fCoordsPasteHint: 'В Яндекс.Картах: щёлкните правой кнопкой по нужной точке на карте → «Что здесь» → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами',
-      fLatLabel: 'Широта (lat) *',
-      fLngLabel: 'Долгота (lng) *',
+      fLatLabel: 'Широта (lat)',
+      fLngLabel: 'Долгота (lng)',
 
       secPriceTitle: 'Цена',
       secPriceHint: 'Укажите продажу, аренду или оба варианта — хотя бы одно поле обязательно',
@@ -64,10 +67,11 @@ window.BSI18n = (function () {
       fRentMarketRangePh: 'напр. 80 000 – 110 000 ₽ / мес.',
 
       secParamsTitle: 'Параметры объекта',
-      fHouseAreaLabel: 'Площадь дома, м² *',
+      secParamsHint: 'Всё необязательно',
+      fHouseAreaLabel: 'Площадь дома, м²',
       fPlotAreaLabel: 'Площадь участка, м²',
-      fBedroomsLabel: 'Спальни *',
-      fBathroomsLabel: 'Ванные *',
+      fBedroomsLabel: 'Спальни',
+      fBathroomsLabel: 'Ванные',
       fPoolSizeLabel: 'Размер бассейна',
       fPoolSizePh: 'напр. 3 × 7 м',
 
@@ -85,6 +89,10 @@ window.BSI18n = (function () {
       fAutoGateLabel: 'Автоматические ворота',
       fExtraFeaturesLabel: 'Дополнительные преимущества',
       fExtraFeaturesPh: 'напр. видовая терраса, смарт-дом, мебель premium-класса',
+      fCommunityInfoLabel: 'Информация о посёлке',
+      fCommunityInfoPh: 'напр. Закрытый посёлок с охраной, общим бассейном и зоной барбекю',
+      fBuildingInfoLabel: 'Информация о ЖК',
+      fBuildingInfoPh: 'напр. Новый ЖК с бассейном на крыше, фитнес-залом и подземным паркингом',
 
       secBuildingTitle: 'О доме / ЖК',
       secBuildingHint: 'Необязательно — появится отдельным слайдом «О доме», если заполнено хотя бы одно поле',
@@ -137,7 +145,7 @@ window.BSI18n = (function () {
       secAgentHint: 'Появятся на последнем слайде презентации — контактной карточке для клиента',
       fAgentNameLabel: 'Имя агента',
       fAgentNamePh: 'напр. Анна Соломинова',
-      fAgentPhoneLabel: 'Телефон *', fAgentPhonePh: '+7 900 000-00-00',
+      fAgentPhoneLabel: 'Телефон', fAgentPhonePh: '+7 900 000-00-00',
       fAgentPhoneError: 'Пожалуйста, заполните номер телефона',
       agentPhotoNone: 'Нет фото',
       agentPhotoAddBtn: 'Загрузить фото',
@@ -151,8 +159,6 @@ window.BSI18n = (function () {
       footerCopyright: '© Быстросайт. Все права защищены.',
       footerPrivacyLink: 'Политика обработки персональных данных',
       footerLegalInfo: 'Самозанятый Соломинова Анна Викторовна · ИНН 027600146568',
-      footerOfertaLink: 'Публичная оферта',
-      footerPricingLink: 'Тарифы',
       policyModalHint: 'Долистайте текст до конца, чтобы согласиться',
       policyModalHintRead: 'Прочитано — теперь можно поставить галочку',
       policyModalClose: 'Закрыть',
@@ -165,8 +171,6 @@ window.BSI18n = (function () {
       deckPdfError: 'Не удалось создать PDF. Попробуйте ещё раз.',
       deckLoading: 'Загрузка презентации…',
       deckNotFound: 'Презентация не найдена — возможно, ссылка устарела.',
-      deckExpiredTitle: 'Презентация больше не активна — бесплатный период (30 дней) истёк',
-      deckExpiredCta: 'Продлить доступ →',
       pdfMapFallback: 'Интерактивная карта доступна в веб-версии презентации',
       deckNavAria: 'Навигация по слайдам',
 
@@ -175,13 +179,7 @@ window.BSI18n = (function () {
       editGateSubmitBtn: 'Подтвердить',
       editGateError: 'Неверный номер телефона. Попробуйте ещё раз.',
 
-      finalizeConfirmFree: 'После формирования ссылки или скачивания PDF редактирование этого объекта станет недоступно. Продолжить?',
-      finalizeConfirmCredit: 'Это не первая финализация этого объекта — будет списана 1 презентация из вашего пакета (останется {credits}). После этого редактирование снова станет недоступно. Продолжить?',
-      finalizeCancel: 'Отмена',
-      finalizeContinue: 'Продолжить',
-      finalizeBlockedMessage: 'Презентация уже отправлена или скачана. Оформите платный доступ, чтобы продолжить редактирование.',
       finalizeBlockedClose: 'Закрыть',
-      finalizeGoPay: 'Перейти к оплате',
       finalizeStillSaving: 'Презентация ещё сохраняется, подождите пару секунд и попробуйте снова.',
       finalizeSaveFailed: 'Не удалось сохранить презентацию на сервере. Проверьте соединение и попробуйте ещё раз — мы повторили попытку сохранения автоматически.',
       finalizeError: 'Не удалось выполнить действие. Попробуйте ещё раз.',
@@ -189,36 +187,6 @@ window.BSI18n = (function () {
       shareCopied: 'Ссылка скопирована! Теперь вставьте её в WhatsApp, Telegram или куда хотите отправить (зажмите поле ввода → «Вставить»).',
       shareCopyManual: 'Скопируйте ссылку на презентацию:',
 
-      pricingTitle: 'Тарифы',
-      pricingIntro: 'Первая презентация с этим номером телефона уже была создана бесплатно. Чтобы создать следующую, выберите тариф.',
-      pricingCreditsNote: 'Презентации из пакета не сгорают — они закрепляются за вашим номером телефона и остаются доступны в любое время, использовать сразу все не обязательно.',
-      pricingSingleTitle: 'Разовая',
-      pricingPack5Title: '5 презентаций',
-      pricingPackTitle: '20 презентаций',
-      pricingUnlimitedTitle: 'Безлимит',
-      pricingPerMonth: '/мес',
-      pricingFeaturePdf: 'PDF-версия презентации',
-      pricingFeatureLiveLink: 'Живая интерактивная ссылка',
-      pricingFeatureAssets: 'Свой логотип, фото, QR-коды',
-      pricingFeatureWatermarkOn: 'Водяной знак «Быстросайт»',
-      pricingFeatureWatermarkOff: 'Без водяного знака',
-      pricingPayBtn: 'Оплатить',
-      pricingBack: '← Назад к форме',
-      pricingPaymentClose: '← Назад к тарифам',
-      pricingActivationDelay: 'Доступ откроется автоматически сразу после оплаты',
-      pricingPayPhoneLabel: 'Номер телефона (на него будет привязан доступ)',
-      pricingPayPhoneError: 'Укажите номер телефона',
-      pricingPayGoBtn: 'Перейти к оплате →',
-      pricingPayError: 'Не удалось создать ссылку на оплату. Попробуйте ещё раз или напишите нам.',
-      pricingTimerLink: 'Написать в Telegram: @proff_broker →',
-
-      pricingConsentLabelPrefix: 'Я согласен с ',
-      pricingConsentLink: 'согласием на обработку персональных данных и передачу третьим лицам',
-      pricingConsentHint: 'Чтобы поставить галочку, откройте и дочитайте согласие до конца',
-      pricingConsentError: 'Чтобы продолжить, подтвердите согласие на обработку персональных данных',
-      pricingConsentModalHint: 'Долистайте текст до конца, чтобы согласиться',
-      pricingConsentModalHintRead: 'Прочитано — теперь можно поставить галочку',
-      pricingConsentModalClose: 'Закрыть',
       deckPrevAria: 'Предыдущий слайд',
       deckNextAria: 'Следующий слайд',
 
@@ -253,6 +221,7 @@ window.BSI18n = (function () {
       deckSpecGarage: 'Гараж', deckSpecGarageUnit: 'машиноместа', deckSpecSecurity: 'Охрана',
       deckSpecSecurityVal: 'Круглосуточная', deckSpecGate: 'Ворота', deckSpecGateVal: 'Автоматические',
       deckSpecManagement: 'Управление', deckExtraLabel: 'Дополнительно',
+      deckCommunityInfoLabel: 'О посёлке', deckBuildingInfoLabel: 'О ЖК',
 
       deckArchitectureLabel: 'Архитектура',
 
@@ -315,7 +284,7 @@ window.BSI18n = (function () {
 
       policySec3Title: '3. Какие данные собираются и цель обработки',
       policySec3Intro: 'При использовании Сервиса Оператор обрабатывает следующие персональные данные пользователя:',
-      policySec3Li1: 'номер телефона агента — используется для идентификации пользователя, начисления и списания оплаты за услуги Сервиса, проверки условий бесплатного тарифа и связи с пользователем по вопросам работы Сервиса;',
+      policySec3Li1: 'номер телефона агента — используется для идентификации пользователя и связи с пользователем по вопросам работы Сервиса;',
       policySec3Li2: 'имя и фотография агента — используются для идентификации агента и отображения на создаваемой им странице презентации; хранятся тем же способом, что и номер телефона (см. раздел 5);',
       policySec3Li3: 'логотип, название агентства/компании, фотографии объекта недвижимости, описание, цена и иные сведения, которые пользователь добровольно указывает для отображения на создаваемой им странице презентации, — используются исключительно для формирования и публичного отображения этой презентации по прямой ссылке.',
       policySec3Outro: 'Обработка номера телефона осуществляется только в целях, прямо указанных в настоящем разделе, и не производится в иных целях без получения дополнительного согласия пользователя. Предоставление данных является добровольным; отказ от заполнения обязательных полей технически ограничивает возможность создания презентации и не влечёт иных последствий.',
@@ -333,7 +302,6 @@ window.BSI18n = (function () {
       policySec7Title: '7. Передача персональных данных третьим лицам',
       policySec7Intro: 'Оператор не передаёт персональные данные третьим лицам, за исключением:',
       policySec7Li1: 'облачной инфраструктуры, на которой физически размещены персональные данные (сервер на территории Российской Федерации), — используется исключительно для хранения по поручению Оператора, без самостоятельного доступа к данным для собственных целей;',
-      policySec7Li2: 'платёжного оператора ООО «Продамус», которому номер телефона передаётся при оплате услуг Сервиса на странице /pricing — согласие на такую передачу пользователь даёт отдельно, на странице /payment-consent, до совершения оплаты;',
       policySec7Li3: 'случаев, прямо предусмотренных законодательством Российской Федерации, — по законному требованию уполномоченных государственных органов.',
       policySec7Outro: 'Публичное отображение номера телефона на странице презентации, созданной по прямому волеизъявлению самого пользователя, не является передачей третьим лицам в смысле настоящей Политики — это основная функциональность Сервиса, на использование которой пользователь даёт согласие.',
 
@@ -362,36 +330,6 @@ window.BSI18n = (function () {
 
       policyTelegramHandle: '@proff_broker',
       policyBackBtn: '← Назад к форме',
-
-      pconsentPageTitle: 'Согласие на обработку персональных данных — Быстросайт',
-      pconsentH1: 'Согласие на обработку персональных данных и передачу третьим лицам',
-      pconsentP1: 'Я свободно, своей волей и в своём интересе даю согласие ООО «ПРОДАМУС» (424020, Республика Марий Эл, г. Йошкар-Ола, ул. Анциферова, д. 27 «А», пом. 29) (далее — «Оператор») на обработку моих персональных данных (далее — «Согласие») в целях обработки и подтверждения оплаты услуг сервиса «Быстросайт» через платёжный сервис Оператора, идентификации плательщика и информирования об исполнении платежа.',
-      pconsentP2: 'Оператор вправе осуществлять сбор, запись, систематизацию, накопление, хранение, уточнение (обновление, изменение), извлечение, использование, передачу (доступ, предоставление), блокирование, удаление, уничтожение персональных данных. Обработка может осуществляться как с использованием средств автоматизации, так и без них.',
-
-      pconsentSec2Title: 'Перечень персональных данных, на обработку которых я даю согласие',
-      pconsentSec2Intro: 'Я даю согласие на обработку следующих персональных данных:',
-      pconsentSec2Li1: 'фамилия, имя, отчество;',
-      pconsentSec2Li2: 'контактные данные (номер телефона и адрес электронной почты);',
-      pconsentSec2Li4: 'сведения о примерном местоположении, определяемом по техническим данным, если такие сведения используются Оператором.',
-
-      pconsentSec3Title: 'Передача третьим лицам',
-      pconsentSec3P1: 'Я даю Оператору право привлекать третьих лиц к обработке моих данных путём поручения обработки или передачи без поручения исключительно для достижения указанной цели и в минимально необходимом составе, при условии обеспечения ими конфиденциальности и безопасности. К таким третьим лицам относятся:',
-      pconsentSec3Li1: 'ООО «Яндекс.Облако» (119021, г. Москва, ул. Льва Толстого, д. 16, пом. 528);',
-      pconsentSec3Li5Prefix: 'а также третьи лица, указанные в «Перечне третьих лиц, привлечённых к обработке ПДн» (',
-      pconsentThirdPartyListLink: 'prodamus.ru/privacy-tretilica',
-      pconsentSec3Li5Mid: '), являющемся неотъемлемой частью настоящего Согласия и Политики конфиденциальности ООО «Продамус» (',
-      pconsentPrivacyPolicyLink: 'prodamus.ru/privacy',
-      pconsentSec3Li5Suffix: ').',
-
-      pconsentSec4Title: 'Срок действия',
-      pconsentSec4P1: 'Согласие действует с момента его предоставления до достижения целей обработки либо отзыва Согласия — в зависимости от того, какое событие наступит раньше.',
-
-      pconsentSec5Title: 'Порядок отзыва',
-      pconsentSec5P1Prefix: 'Согласие может быть отозвано путём направления письменного обращения на электронную почту ',
-      pconsentEmail: 'complaints@prodamus.ru',
-      pconsentSec5P1Suffix: ' или письмом по адресу Оператора. В случае отзыва Согласия Оператор и третьи лица обязаны прекратить обработку и уничтожить данные, за исключением случаев, когда сохранение данных требуется согласно п. 2–11 ч. 1 ст. 6, ч. 2 ст. 10 и ч. 2 ст. 11 Федерального закона от 27.07.2006 № 152-ФЗ «О персональных данных».',
-
-      pconsentBackBtn: '← Назад к тарифам',
     },
     en: {
       appBrandName: 'Bystrosite',
@@ -411,9 +349,12 @@ window.BSI18n = (function () {
       fPropertyTypeLabel: 'Type',
       optApartment: 'Apartment', optHouse: 'House', optCottage: 'Cottage',
 
+      fieldFlagRequired: 'Required field',
+      fieldFlagOptional: 'Optional field',
+
       secAboutTitle: 'About the property',
       secAboutHint: 'Title and free-form description for the card and the presentation cover',
-      fTitleLabel: 'Property name *',
+      fTitleLabel: 'Property name',
       fTitlePh: 'e.g. Cottage Aurora',
       fDescriptionLabel: 'Description',
       fDescriptionPh: 'e.g. A single-story cottage with a private pool in a gated community, 7 minutes from the sea in Sochi. Fully furnished, floor-to-ceiling living room windows, Mediterranean-style garden around the plot.',
@@ -426,14 +367,14 @@ window.BSI18n = (function () {
       fClosingPhrasePh: 'e.g. The residence awaits its moment',
 
       secLocationTitle: 'Location',
-      secLocationHint: 'Address and coordinates — used to build the map on the location slide',
-      fLocationNameLabel: 'Location *',
+      secLocationHint: 'Optional. Address and coordinates — used to build the map on the location slide; if coordinates are missing (both latitude and longitude), the location slide won\'t appear in the presentation',
+      fLocationNameLabel: 'Location',
       fLocationNamePh: 'e.g. Khosta, Sochi, Krasnodar Krai',
       fCoordsPasteLabel: 'Paste coordinates from Yandex Maps',
       fCoordsPastePh: 'e.g. 43.5397321, 39.8944543',
       fCoordsPasteHint: 'In Yandex Maps: right-click the point on the map → "What\'s here" → copy the coordinates that appear and paste them here, the fields below fill in automatically',
-      fLatLabel: 'Latitude (lat) *',
-      fLngLabel: 'Longitude (lng) *',
+      fLatLabel: 'Latitude (lat)',
+      fLngLabel: 'Longitude (lng)',
 
       secPriceTitle: 'Price',
       secPriceHint: 'Specify sale, rent, or both — at least one is required',
@@ -446,10 +387,11 @@ window.BSI18n = (function () {
       fRentMarketRangePh: 'e.g. RUB 80,000 – 110,000 / mo.',
 
       secParamsTitle: 'Property parameters',
-      fHouseAreaLabel: 'House area, m² *',
+      secParamsHint: 'All optional',
+      fHouseAreaLabel: 'House area, m²',
       fPlotAreaLabel: 'Plot area, m²',
-      fBedroomsLabel: 'Bedrooms *',
-      fBathroomsLabel: 'Bathrooms *',
+      fBedroomsLabel: 'Bedrooms',
+      fBathroomsLabel: 'Bathrooms',
       fPoolSizeLabel: 'Pool size',
       fPoolSizePh: 'e.g. 3 × 7 m',
 
@@ -467,6 +409,10 @@ window.BSI18n = (function () {
       fAutoGateLabel: 'Automatic gate',
       fExtraFeaturesLabel: 'Extra highlights',
       fExtraFeaturesPh: 'e.g. rooftop view terrace, smart home, premium-class furniture',
+      fCommunityInfoLabel: 'Community information',
+      fCommunityInfoPh: 'e.g. Gated community with security, a shared pool and a barbecue area',
+      fBuildingInfoLabel: 'Building information',
+      fBuildingInfoPh: 'e.g. A new building with a rooftop pool, a gym and underground parking',
 
       secBuildingTitle: 'About the building',
       secBuildingHint: 'Optional — appears as its own "About the building" slide if at least one field is filled in',
@@ -519,7 +465,7 @@ window.BSI18n = (function () {
       secAgentHint: 'Appear on the last slide of the presentation — the client contact card',
       fAgentNameLabel: 'Agent name',
       fAgentNamePh: 'e.g. Anna Solominova',
-      fAgentPhoneLabel: 'Phone *', fAgentPhonePh: '+1 555 000-00-00',
+      fAgentPhoneLabel: 'Phone', fAgentPhonePh: '+1 555 000-00-00',
       fAgentPhoneError: 'Please fill in the phone number',
       agentPhotoNone: 'No photo',
       agentPhotoAddBtn: 'Upload photo',
@@ -533,8 +479,6 @@ window.BSI18n = (function () {
       footerCopyright: '© Bystrosite. All rights reserved.',
       footerPrivacyLink: 'Privacy Policy',
       footerLegalInfo: 'Self-employed Anna Solominova · TIN 027600146568',
-      footerOfertaLink: 'Public Offer',
-      footerPricingLink: 'Pricing',
       policyModalHint: 'Scroll to the end of the text to agree',
       policyModalHintRead: 'Read — you can now check the box',
       policyModalClose: 'Close',
@@ -547,8 +491,6 @@ window.BSI18n = (function () {
       deckPdfError: 'Could not create the PDF. Please try again.',
       deckLoading: 'Loading presentation…',
       deckNotFound: 'Presentation not found — the link may be out of date.',
-      deckExpiredTitle: 'This presentation is no longer active — its 30-day free period has ended',
-      deckExpiredCta: 'Extend access →',
       pdfMapFallback: 'The interactive map is available in the web version of the presentation',
       deckNavAria: 'Slide navigation',
 
@@ -557,13 +499,7 @@ window.BSI18n = (function () {
       editGateSubmitBtn: 'Confirm',
       editGateError: 'Incorrect phone number. Please try again.',
 
-      finalizeConfirmFree: 'Once you share the link or download the PDF, editing this listing will be locked. Continue?',
-      finalizeConfirmCredit: "This isn't this listing's first finalization — 1 presentation will be spent from your package ({credits} left after). Editing will lock again afterward. Continue?",
-      finalizeCancel: 'Cancel',
-      finalizeContinue: 'Continue',
-      finalizeBlockedMessage: 'This presentation has already been shared or downloaded. Get paid access to keep editing it.',
       finalizeBlockedClose: 'Close',
-      finalizeGoPay: 'Go to payment',
       finalizeStillSaving: 'The presentation is still saving — wait a couple seconds and try again.',
       finalizeSaveFailed: 'Could not save the presentation to the server. Check your connection and try again — we already retried the save automatically.',
       finalizeError: 'Could not complete the action. Please try again.',
@@ -571,36 +507,6 @@ window.BSI18n = (function () {
       shareCopied: 'Link copied! Now paste it into WhatsApp, Telegram, or wherever you want to send it (long-press the input field → Paste).',
       shareCopyManual: 'Copy the presentation link:',
 
-      pricingTitle: 'Pricing',
-      pricingIntro: 'A free presentation was already created with this phone number. To create another, choose a plan.',
-      pricingCreditsNote: "Presentations in a package don't expire — they're tied to your phone number and stay available any time, you don't have to use them all at once.",
-      pricingSingleTitle: 'One-off',
-      pricingPack5Title: '5 presentations',
-      pricingPackTitle: '20 presentations',
-      pricingUnlimitedTitle: 'Unlimited',
-      pricingPerMonth: '/mo',
-      pricingFeaturePdf: 'PDF version of the presentation',
-      pricingFeatureLiveLink: 'Live interactive link',
-      pricingFeatureAssets: 'Your own logo, photos, QR codes',
-      pricingFeatureWatermarkOn: '"Bystrosite" watermark',
-      pricingFeatureWatermarkOff: 'No watermark',
-      pricingPayBtn: 'Pay',
-      pricingBack: '← Back to form',
-      pricingPaymentClose: '← Back to plans',
-      pricingActivationDelay: 'Access unlocks automatically right after payment',
-      pricingPayPhoneLabel: 'Phone number (access is tied to it)',
-      pricingPayPhoneError: 'Please enter a phone number',
-      pricingPayGoBtn: 'Go to payment →',
-      pricingPayError: "Couldn't create a payment link. Please try again or message us.",
-      pricingTimerLink: 'Message on Telegram: @proff_broker →',
-
-      pricingConsentLabelPrefix: 'I agree to the ',
-      pricingConsentLink: 'consent to processing of personal data and transfer to third parties',
-      pricingConsentHint: 'To check the box, open and read the consent all the way through',
-      pricingConsentError: 'To continue, confirm consent to the processing of personal data',
-      pricingConsentModalHint: 'Scroll to the end of the text to agree',
-      pricingConsentModalHintRead: 'Read — you can now check the box',
-      pricingConsentModalClose: 'Close',
       deckPrevAria: 'Previous slide',
       deckNextAria: 'Next slide',
 
@@ -635,6 +541,7 @@ window.BSI18n = (function () {
       deckSpecGarage: 'Garage', deckSpecGarageUnit: 'parking spaces', deckSpecSecurity: 'Security',
       deckSpecSecurityVal: '24/7', deckSpecGate: 'Gate', deckSpecGateVal: 'Automatic',
       deckSpecManagement: 'Management', deckExtraLabel: 'Additional',
+      deckCommunityInfoLabel: 'About the community', deckBuildingInfoLabel: 'About the building',
 
       deckArchitectureLabel: 'Architecture',
 
@@ -678,13 +585,11 @@ window.BSI18n = (function () {
 
       slideAnnounce: 'Slide {n} of {total}: {label}',
 
-      /* privacy.html and payment-consent.html have no English version —
-         both are Russian legal documents (152-ФЗ), and translating
-         "самозанятая"/ИНН/152-ФЗ citations would be inaccurate, not helpful
-         (same reasoning oferta.html's own comment already gives for
-         skipping a lang switch there). Neither page has an RU/EN switch;
-         t() falls back to the RU strings above for any policy- or
-         pconsent-prefixed key if ever read with lang 'en'. */
+      /* privacy.html has no English version — it's a Russian legal document
+         (152-ФЗ), and translating "самозанятая"/ИНН/152-ФЗ citations would
+         be inaccurate, not helpful. It has no RU/EN switch; t() falls back
+         to the RU strings above for any policy-prefixed key if ever read
+         with lang 'en'. */
     },
   };
 

@@ -6,7 +6,7 @@
 <title>Быстросайт — конструктор презентаций недвижимости</title>
 <!-- Every asset below is referenced with a relative path (css/..., js/...,
      assets/...). That resolved fine while every route was one path segment
-     deep (/, /new-listing, /preview, /pricing) — /p/<id> is two segments
+     deep (/, /new-listing, /preview) — /p/<id> is two segments
      deep, so without this <base>, js/app.js would resolve against
      /p/<id>/js/app.js and 404. <base href="/"> pins every relative URL in
      the document to the site root regardless of how deep the current route is. -->
@@ -27,8 +27,7 @@
      relative one is exactly what let Telegram/Facebook's crawlers cache a
      broken or stale preview instead of ever fetching the real image).
      Currently pinned to the onrender.com domain — update these three if the
-     site ever moves to its own domain, same as oferta.html's "Сайт
-     Исполнителя" definition. -->
+     site ever moves to its own domain. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Быстросайт">
 <meta property="og:title" content="Быстросайт — конструктор презентаций для риелторов">
@@ -85,8 +84,6 @@
       <p data-i18n="footerCopyright">© Быстросайт. Все права защищены.</p>
       <p data-i18n="footerLegalInfo">Самозанятый Соломинова Анна Викторовна · ИНН 027600146568</p>
       <p><a href="/privacy" data-i18n="footerPrivacyLink">Политика обработки персональных данных</a></p>
-      <p><a href="/oferta" data-i18n="footerOfertaLink">Публичная оферта</a></p>
-      <p><a href="/pricing" data-nav data-i18n="footerPricingLink">Тарифы</a></p>
     </footer>
   </div>
 
@@ -136,13 +133,19 @@
           <p class="field-group-hint" data-i18n="secAboutHint">Название и свободное описание для карточки и обложки презентации</p>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fTitle" data-i18n="fTitleLabel">Название объекта *</label>
+              <div class="field-label-row">
+                <label for="fTitle" data-i18n="fTitleLabel">Название объекта</label>
+                <span class="field-flag field-flag-required" data-i18n="fieldFlagRequired">Обязательное поле</span>
+              </div>
               <input type="text" id="fTitle" required data-i18n-placeholder="fTitlePh" placeholder="Коттедж «Аврора»">
             </div>
           </div>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fDescription" data-i18n="fDescriptionLabel">Описание</label>
+              <div class="field-label-row">
+                <label for="fDescription" data-i18n="fDescriptionLabel">Описание</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <textarea id="fDescription" rows="4" data-i18n-placeholder="fDescriptionPh" placeholder="Одноэтажный коттедж с приватным бассейном в закрытом посёлке в 7 минутах от моря в Сочи. Полностью меблирован, панорамное остекление гостиной, средиземноморский сад по периметру участка."></textarea>
             </div>
           </div>
@@ -153,13 +156,19 @@
           <p class="field-group-hint" data-i18n="secPhrasesHint">Короткие фразы поверх фото — необязательно. Если оставить пустым, слайд останется просто с фото, без подписи</p>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fEmotionPhrase" data-i18n="fEmotionPhraseLabel">Фраза на слайде «Эмоция»</label>
+              <div class="field-label-row">
+                <label for="fEmotionPhrase" data-i18n="fEmotionPhraseLabel">Фраза на слайде «Эмоция»</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="text" id="fEmotionPhrase" placeholder="напр. Тишина, свет и вода" data-i18n-placeholder="fEmotionPhrasePh" maxlength="120">
             </div>
           </div>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fClosingPhrase" data-i18n="fClosingPhraseLabel">Фраза на контактном слайде</label>
+              <div class="field-label-row">
+                <label for="fClosingPhrase" data-i18n="fClosingPhraseLabel">Фраза на контактном слайде</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="text" id="fClosingPhrase" placeholder="напр. Резиденция ждёт своего часа" data-i18n-placeholder="fClosingPhrasePh" maxlength="120">
             </div>
           </div>
@@ -167,11 +176,14 @@
 
         <section class="field-group">
           <h2 data-i18n="secLocationTitle">Локация</h2>
-          <p class="field-group-hint" data-i18n="secLocationHint">Адрес и координаты — по ним построим карту на слайде локации</p>
+          <p class="field-group-hint" data-i18n="secLocationHint">Необязательно. Адрес и координаты — по ним построим карту на слайде локации; если координаты не указаны (обе широта и долгота), слайд локации в презентации не появится</p>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fLocationName" data-i18n="fLocationNameLabel">Локация *</label>
-              <input type="text" id="fLocationName" required placeholder="напр. Хоста, Сочи, Краснодарский край" data-i18n-placeholder="fLocationNamePh">
+              <div class="field-label-row">
+                <label for="fLocationName" data-i18n="fLocationNameLabel">Локация</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <input type="text" id="fLocationName" placeholder="напр. Хоста, Сочи, Краснодарский край" data-i18n-placeholder="fLocationNamePh">
             </div>
           </div>
           <div class="field-row">
@@ -183,12 +195,18 @@
           </div>
           <div class="field-row">
             <div class="field">
-              <label for="fLat" data-i18n="fLatLabel">Широта (lat) *</label>
-              <input type="number" id="fLat" step="any" required placeholder="43.5397">
+              <div class="field-label-row">
+                <label for="fLat" data-i18n="fLatLabel">Широта (lat)</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <input type="number" id="fLat" step="any" placeholder="43.5397">
             </div>
             <div class="field">
-              <label for="fLng" data-i18n="fLngLabel">Долгота (lng) *</label>
-              <input type="number" id="fLng" step="any" required placeholder="39.8944">
+              <div class="field-label-row">
+                <label for="fLng" data-i18n="fLngLabel">Долгота (lng)</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <input type="number" id="fLng" step="any" placeholder="39.8944">
             </div>
           </div>
         </section>
@@ -229,25 +247,41 @@
 
         <section class="field-group">
           <h2 data-i18n="secParamsTitle">Параметры объекта</h2>
+          <p class="field-group-hint" data-i18n="secParamsHint">Всё необязательно</p>
           <div class="field-row">
             <div class="field">
-              <label for="fHouseArea" data-i18n="fHouseAreaLabel">Площадь дома, м² *</label>
-              <input type="number" id="fHouseArea" min="0" required value="260">
+              <div class="field-label-row">
+                <label for="fHouseArea" data-i18n="fHouseAreaLabel">Площадь дома, м²</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <input type="number" id="fHouseArea" min="0" value="260">
             </div>
             <div class="field">
-              <label for="fPlotArea" data-i18n="fPlotAreaLabel">Площадь участка, м²</label>
+              <div class="field-label-row">
+                <label for="fPlotArea" data-i18n="fPlotAreaLabel">Площадь участка, м²</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="number" id="fPlotArea" min="0" value="420">
             </div>
             <div class="field">
-              <label for="fBedrooms" data-i18n="fBedroomsLabel">Спальни *</label>
-              <input type="number" id="fBedrooms" min="0" required value="4">
+              <div class="field-label-row">
+                <label for="fBedrooms" data-i18n="fBedroomsLabel">Спальни</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <input type="number" id="fBedrooms" min="0" value="4">
             </div>
             <div class="field">
-              <label for="fBathrooms" data-i18n="fBathroomsLabel">Ванные *</label>
-              <input type="number" id="fBathrooms" min="0" required value="3">
+              <div class="field-label-row">
+                <label for="fBathrooms" data-i18n="fBathroomsLabel">Ванные</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <input type="number" id="fBathrooms" min="0" value="3">
             </div>
             <div class="field field-house">
-              <label for="fPoolSize" data-i18n="fPoolSizeLabel">Размер бассейна</label>
+              <div class="field-label-row">
+                <label for="fPoolSize" data-i18n="fPoolSizeLabel">Размер бассейна</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="text" id="fPoolSize" placeholder="напр. 3 × 7 м" data-i18n-placeholder="fPoolSizePh">
             </div>
           </div>
@@ -295,6 +329,22 @@
             <div class="field span-2">
               <label for="fExtraFeatures" data-i18n="fExtraFeaturesLabel">Дополнительные преимущества</label>
               <textarea id="fExtraFeatures" rows="3" placeholder="напр. видовая терраса, смарт-дом, мебель premium-класса" data-i18n-placeholder="fExtraFeaturesPh"></textarea>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field span-2 field-house">
+              <div class="field-label-row">
+                <label for="fCommunityInfo" data-i18n="fCommunityInfoLabel">Информация о посёлке</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <textarea id="fCommunityInfo" rows="3" placeholder="напр. Закрытый посёлок с охраной, общим бассейном и зоной барбекю" data-i18n-placeholder="fCommunityInfoPh"></textarea>
+            </div>
+            <div class="field span-2 field-apartment" hidden>
+              <div class="field-label-row">
+                <label for="fBuildingInfo" data-i18n="fBuildingInfoLabel">Информация о ЖК</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <textarea id="fBuildingInfo" rows="3" placeholder="напр. Новый ЖК с бассейном на крыше, фитнес-залом и подземным паркингом" data-i18n-placeholder="fBuildingInfoPh"></textarea>
             </div>
           </div>
         </section>
@@ -367,17 +417,26 @@
           <p class="field-group-hint" data-i18n="secMgmtHint">Необязательно — появится на слайде «Ежемесячные расходы», если заполнено</p>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fManagementCompany" data-i18n="fManagementCompanyLabel">Управляющая компания</label>
+              <div class="field-label-row">
+                <label for="fManagementCompany" data-i18n="fManagementCompanyLabel">Управляющая компания</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="text" id="fManagementCompany" value="УК «Аврора»">
             </div>
             <div class="field">
-              <label for="fCamFee" data-i18n="fCamFeeLabel">Эксплуатационные платежи (в месяц)</label>
+              <div class="field-label-row">
+                <label for="fCamFee" data-i18n="fCamFeeLabel">Эксплуатационные платежи (в месяц)</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="number" id="fCamFee" min="0" value="5500">
             </div>
           </div>
           <div class="field-row">
             <div class="field">
-              <label for="fCleaningFee" data-i18n="fCleaningFeeLabel">Клининг</label>
+              <div class="field-label-row">
+                <label for="fCleaningFee" data-i18n="fCleaningFeeLabel">Клининг</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="number" id="fCleaningFee" min="0" value="800">
             </div>
             <div class="field">
@@ -389,7 +448,10 @@
               </select>
             </div>
             <div class="field">
-              <label for="fPoolMaintenanceFee" data-i18n="fPoolMaintenanceFeeLabel">Обслуживание бассейна (в месяц)</label>
+              <div class="field-label-row">
+                <label for="fPoolMaintenanceFee" data-i18n="fPoolMaintenanceFeeLabel">Обслуживание бассейна (в месяц)</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
               <input type="number" id="fPoolMaintenanceFee" min="0" value="3000">
             </div>
           </div>
@@ -399,7 +461,7 @@
           <h2 data-i18n="secPhotosTitle">Фотографии</h2>
           <p class="field-group-hint" data-i18n="secPhotosHint">Каждый слот соответствует конкретному месту в презентации — кликните по слоту, чтобы загрузить нужный кадр. Список спален и ванных пересчитывается по полям «Параметры объекта» выше. Можно оставить пустым — слайды покажут плейсхолдеры</p>
           <div class="field field-checkbox">
-            <label class="checkbox-label"><input type="checkbox" id="fColorGrade" checked> <span data-i18n="fColorGradeLabel">Применить цветокоррекцию</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="fColorGrade"> <span data-i18n="fColorGradeLabel">Применить цветокоррекцию</span></label>
           </div>
           <p class="field-group-hint" data-i18n="fColorGradeHint">Плёночный вид: приглушённые тона, тёплый баланс белого, мягкая виньетка и лёгкая рельефность текстур — применяется автоматически к каждому загруженному фото</p>
           <div class="photo-slots" id="photoSlots"><!-- slot tiles injected by js/app.js --></div>
@@ -428,11 +490,17 @@
           <p class="field-group-hint" data-i18n="secAgentHint">Появятся на последнем слайде презентации — контактной карточке для клиента</p>
           <div class="field-row">
             <div class="field">
-              <label for="fAgentName" data-i18n="fAgentNameLabel">Имя агента</label>
-              <input type="text" id="fAgentName" maxlength="60" placeholder="напр. Анна Соломинова" data-i18n-placeholder="fAgentNamePh">
+              <div class="field-label-row">
+                <label for="fAgentName" data-i18n="fAgentNameLabel">Имя агента</label>
+                <span class="field-flag field-flag-required" data-i18n="fieldFlagRequired">Обязательное поле</span>
+              </div>
+              <input type="text" id="fAgentName" required maxlength="60" placeholder="напр. Анна Соломинова" data-i18n-placeholder="fAgentNamePh">
             </div>
             <div class="field">
-              <label for="fAgentPhone" data-i18n="fAgentPhoneLabel">Телефон *</label>
+              <div class="field-label-row">
+                <label for="fAgentPhone" data-i18n="fAgentPhoneLabel">Телефон</label>
+                <span class="field-flag field-flag-required" data-i18n="fieldFlagRequired">Обязательное поле</span>
+              </div>
               <input type="text" id="fAgentPhone" maxlength="40" required placeholder="+7 900 000-00-00" data-i18n-placeholder="fAgentPhonePh">
               <span class="field-inline-error" id="fAgentPhoneError" data-i18n="fAgentPhoneError">Пожалуйста, заполните номер телефона</span>
             </div>
@@ -474,8 +542,6 @@
       <p data-i18n="footerCopyright">© Быстросайт. Все права защищены.</p>
       <p data-i18n="footerLegalInfo">Самозанятый Соломинова Анна Викторовна · ИНН 027600146568</p>
       <p><a href="/privacy" data-i18n="footerPrivacyLink">Политика обработки персональных данных</a></p>
-      <p><a href="/oferta" data-i18n="footerOfertaLink">Публичная оферта</a></p>
-      <p><a href="/pricing" data-nav data-i18n="footerPricingLink">Тарифы</a></p>
     </footer>
   </div>
 
@@ -502,110 +568,6 @@
       </span>
     </nav>
     <div class="sr-only" aria-live="polite" id="deckAnnounce"></div>
-  </div>
-
-  <!-- ===================== VIEW: PRICING (/pricing) ===================== -->
-  <!-- Reached from the finalize-lock modal ("Перейти к оплате") when a
-       listing is already finalized and its phone has no credit or active
-       subscription to reopen/re-finalize it — see requestFinalize /
-       requestEditAccess in js/app.js. -->
-  <div class="view" id="view-pricing" hidden>
-    <header class="app-header">
-      <a href="/" class="app-brand" data-nav>
-        <span class="app-brand-mark"></span>
-        <span class="app-brand-name" data-i18n="appBrandName">Быстросайт</span>
-      </a>
-    </header>
-    <div class="pricing-shell">
-      <h1 data-i18n="pricingTitle">Тарифы</h1>
-      <p data-i18n="pricingIntro">Первая презентация с этим номером телефона уже была создана бесплатно. Чтобы создать следующую, выберите тариф.</p>
-      <p class="pricing-credits-note" data-i18n="pricingCreditsNote">Презентации из пакета не сгорают — они закрепляются за вашим номером телефона и остаются доступны в любое время, использовать сразу все не обязательно.</p>
-      <div class="pricing-cards">
-        <div class="pricing-card">
-          <div class="pricing-card-title" data-i18n="pricingSingleTitle">Разовая</div>
-          <div class="pricing-card-price">250 ₽</div>
-          <ul class="pricing-card-features">
-            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
-            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
-            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
-            <li data-i18n="pricingFeatureWatermarkOn">Водяной знак «Быстросайт»</li>
-          </ul>
-          <button type="button" class="btn btn-ghost pricing-card-pay" data-plan-key="single" data-plan-name="Разовая" data-plan-price="250 ₽" data-i18n="pricingPayBtn">Оплатить</button>
-        </div>
-        <div class="pricing-card">
-          <div class="pricing-card-title" data-i18n="pricingPack5Title">5 презентаций</div>
-          <div class="pricing-card-price">1000 ₽</div>
-          <ul class="pricing-card-features">
-            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
-            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
-            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
-            <li data-i18n="pricingFeatureWatermarkOff">Без водяного знака</li>
-          </ul>
-          <button type="button" class="btn btn-ghost pricing-card-pay" data-plan-key="pack5" data-plan-name="5 презентаций" data-plan-price="1000 ₽" data-i18n="pricingPayBtn">Оплатить</button>
-        </div>
-        <div class="pricing-card">
-          <div class="pricing-card-title" data-i18n="pricingPackTitle">20 презентаций</div>
-          <div class="pricing-card-price">3000 ₽</div>
-          <ul class="pricing-card-features">
-            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
-            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
-            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
-            <li data-i18n="pricingFeatureWatermarkOff">Без водяного знака</li>
-          </ul>
-          <button type="button" class="btn btn-ghost pricing-card-pay" data-plan-key="pack20" data-plan-name="20 презентаций" data-plan-price="3000 ₽" data-i18n="pricingPayBtn">Оплатить</button>
-        </div>
-        <div class="pricing-card pricing-card-featured">
-          <div class="pricing-card-title" data-i18n="pricingUnlimitedTitle">Безлимит</div>
-          <div class="pricing-card-price">10000 ₽<span class="pricing-card-period" data-i18n="pricingPerMonth">/мес</span></div>
-          <ul class="pricing-card-features">
-            <li data-i18n="pricingFeaturePdf">PDF-версия презентации</li>
-            <li data-i18n="pricingFeatureLiveLink">Живая интерактивная ссылка</li>
-            <li data-i18n="pricingFeatureAssets">Свой логотип, фото, QR-коды</li>
-            <li data-i18n="pricingFeatureWatermarkOff">Без водяного знака</li>
-          </ul>
-          <button type="button" class="btn btn-primary pricing-card-pay" data-plan-key="unlimited" data-plan-name="Безлимит" data-plan-price="10000 ₽/мес" data-i18n="pricingPayBtn">Оплатить</button>
-        </div>
-      </div>
-
-      <!-- Payment panel: revealed on "Оплатить". Redirects to a real payform.ru
-           (Prodamus) checkout link built server-side for the chosen plan +
-           phone (POST /api/pricing/pay) — payform's own webhook credits the
-           agent automatically once paid, see processProdamusPayment in
-           server.js. See js/app.js wirePricingPayment() for the wiring. -->
-      <div class="pricing-payment" id="pricingPayment" hidden>
-        <button type="button" class="pricing-payment-close" id="pricingPaymentClose" data-i18n="pricingPaymentClose">← Назад к тарифам</button>
-        <h2 class="pricing-payment-plan" id="pricingPaymentPlan"></h2>
-        <p class="pricing-payment-delay" data-i18n="pricingActivationDelay">Доступ откроется автоматически сразу после оплаты</p>
-        <div class="field pricing-pay-phone-row">
-          <label for="pricingPayPhone" data-i18n="pricingPayPhoneLabel">Номер телефона (на него будет привязан доступ)</label>
-          <input type="tel" id="pricingPayPhone" data-i18n-placeholder="fAgentPhonePh" placeholder="+7 900 000-00-00">
-          <span class="field-inline-error" id="pricingPayPhoneError" data-i18n="pricingPayPhoneError">Укажите номер телефона</span>
-        </div>
-        <div class="field field-checkbox consent-row">
-          <label class="checkbox-label">
-            <input type="checkbox" id="pricingConsent" disabled>
-            <span><span data-i18n="pricingConsentLabelPrefix">Я согласен с </span><a href="/payment-consent" target="_blank" rel="noopener" id="pricingConsentLink" data-i18n="pricingConsentLink">согласием на обработку персональных данных и передачу третьим лицам</a></span>
-          </label>
-          <span class="field-note" id="pricingConsentHint" data-i18n="pricingConsentHint">Чтобы поставить галочку, откройте и дочитайте согласие до конца</span>
-          <span class="field-inline-error" id="pricingConsentError" data-i18n="pricingConsentError">Чтобы продолжить, подтвердите согласие на обработку персональных данных</span>
-        </div>
-        <button type="button" class="btn btn-primary pricing-pay-go" id="pricingPayGo" data-i18n="pricingPayGoBtn">Перейти к оплате →</button>
-        <p class="pricing-pay-error" id="pricingPayError" hidden data-i18n="pricingPayError">Не удалось создать ссылку на оплату. Попробуйте ещё раз или напишите нам.</p>
-        <div class="pricing-help-block">
-          <a class="pricing-help-link btn btn-ghost" href="https://t.me/proff_broker" target="_blank" rel="noopener" data-i18n="pricingTimerLink">Написать в Telegram: @proff_broker →</a>
-        </div>
-      </div>
-
-      <a href="/new-listing" class="btn btn-ghost" data-nav data-i18n="pricingBack">← Назад к форме</a>
-    </div>
-
-    <footer class="app-footer">
-      <p data-i18n="footerCopyright">© Быстросайт. Все права защищены.</p>
-      <p data-i18n="footerLegalInfo">Самозанятый Соломинова Анна Викторовна · ИНН 027600146568</p>
-      <p><a href="/privacy" data-i18n="footerPrivacyLink">Политика обработки персональных данных</a></p>
-      <p><a href="/oferta" data-i18n="footerOfertaLink">Публичная оферта</a></p>
-      <p><a href="/pricing" data-nav data-i18n="footerPricingLink">Тарифы</a></p>
-    </footer>
   </div>
 
   <!-- ===================== Finalize / edit-lock modal ===================== -->
@@ -660,22 +622,6 @@
     </div>
   </div>
 
-  <!-- ===================== Payment consent "read to the end" modal ===================== -->
-  <!-- Same pattern as policyModal above, for pricingConsent (/pricing payment
-       panel) — gates the checkbox on scrolling payment-consent.html, loaded
-       here in its own iframe, to its end. See wireReadToEndConsent() in
-       js/app.js, which both this and policyModal are built from. -->
-  <div class="modal-overlay" id="pricingConsentModal" hidden>
-    <div class="modal-box policy-modal-box" role="dialog" aria-modal="true">
-      <div class="policy-modal-frame-wrap">
-        <iframe id="pricingConsentFrame" src="/payment-consent" title="Согласие на обработку персональных данных"></iframe>
-      </div>
-      <p class="policy-modal-hint" id="pricingConsentModalHint" data-i18n="pricingConsentModalHint">Долистайте текст до конца, чтобы согласиться</p>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" id="pricingConsentModalClose" data-i18n="pricingConsentModalClose">Закрыть</button>
-      </div>
-    </div>
-  </div>
 
 </div>
 <!-- ARTIFACT:BODY:END -->

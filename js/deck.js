@@ -112,11 +112,17 @@ window.BSDeck = (function () {
   function slideLiving(l, n) {
     var photo = getPhoto(l, 'living');
     var body = wordCap(l.description, 18);
+    // "Информация о посёлке" (villa/house) / "Информация о ЖК" (apartment) —
+    // same toggle-by-propertyType convention as fFloors/fFloorNumber; only
+    // one of the two ever has a value at a time (js/app.js clears the other
+    // on type switch), so at most one of these renders.
+    var communityText = l.propertyType === 'apartment' ? l.buildingInfo : l.communityInfo;
+    var communityLabel = l.propertyType === 'apartment' ? t('deckBuildingInfoLabel') : t('deckCommunityInfoLabel');
     var specs = [];
-    specs.push({ label: t('deckSpecHouse'), value: l.houseArea + ' ' + t('unitSqm') });
+    if (l.houseArea != null) specs.push({ label: t('deckSpecHouse'), value: l.houseArea + ' ' + t('unitSqm') });
     if (l.plotArea != null) specs.push({ label: t('deckSpecPlot'), value: l.plotArea + ' ' + t('unitSqm') });
-    specs.push({ label: t('deckSpecBedrooms'), value: String(l.bedrooms) });
-    specs.push({ label: t('deckSpecBathrooms'), value: String(l.bathrooms) });
+    if (l.bedrooms != null) specs.push({ label: t('deckSpecBedrooms'), value: String(l.bedrooms) });
+    if (l.bathrooms != null) specs.push({ label: t('deckSpecBathrooms'), value: String(l.bathrooms) });
     if (l.poolSize) specs.push({ label: t('deckSpecPool'), value: l.poolSize });
     if (l.yard) specs.push({ label: t('deckSpecYard'), value: l.yard });
     if (l.propertyType === 'apartment') {
@@ -145,6 +151,7 @@ window.BSDeck = (function () {
           (body ? '<p class="ed-body">' + esc(body) + '</p>' : '') +
           '<div class="spec-grid">' + specRows + '</div>' +
           (l.extraFeatures ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckExtraLabel')) + '</span><p>' + esc(l.extraFeatures) + '</p></div>' : '') +
+          (communityText ? '<div class="extra-features"><span class="ef-label">' + esc(communityLabel) + '</span><p>' + esc(communityText) + '</p></div>' : '') +
         '</div>',
     };
   }
@@ -484,7 +491,12 @@ window.BSDeck = (function () {
     var outdoorShown = !!(l.poolSize || l.yard);
     var interiorsN = interiorsShown(l);
     var buildingShown = !!(l.complexName || l.buildYear != null || l.buildingClass || l.buildingFloors != null || l.elevators || l.parking || l.infrastructure);
-    var total = 5 + (outdoorShown ? 1 : 0) + (interiorsN ? 1 : 0) + (bedroomsN > 0 ? 1 : 0) + (bathroomsN > 0 ? 1 : 0) + (buildingShown ? 1 : 0) + 3;
+    // Both coordinates, not just one — a lone lat or lng can't place a
+    // marker anywhere, and shipping the slide with a broken/empty Yandex
+    // embed is worse than just not having a location slide at all (see
+    // fLocationName/fLat/fLng, now optional, in index.html).
+    var locationShown = l.lat != null && l.lng != null;
+    var total = 5 + (outdoorShown ? 1 : 0) + (interiorsN ? 1 : 0) + (bedroomsN > 0 ? 1 : 0) + (bathroomsN > 0 ? 1 : 0) + (buildingShown ? 1 : 0) + (locationShown ? 1 : 0) + 2;
 
     var n = 0;
     var slides = [
@@ -499,8 +511,8 @@ window.BSDeck = (function () {
     if (interiorsN) slides.push(slideInteriors(l, ++n));
     if (bedroomsN > 0) slides.push(slideRoomGallery(l, 'bedroom', bedroomsN, t('deckBedroomsGroup'), t('deckBedroomLabel'), ++n));
     if (bathroomsN > 0) slides.push(slideRoomGallery(l, 'bathroom', bathroomsN, t('deckBathroomsGroup'), t('deckBathroomLabel'), ++n));
+    if (locationShown) slides.push(slideLocation(l, nearby, ++n));
     slides.push(
-      slideLocation(l, nearby, ++n),
       slideConditions(l, ++n),
       slideFinal(l, ++n, total)
     );

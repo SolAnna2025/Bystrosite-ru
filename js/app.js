@@ -56,6 +56,8 @@ window.BS = window.BS || {};
     security: true,
     autoGate: true,
     extraFeatures: 'Видовая терраса на крыше, система «умный дом», мебель premium-класса',
+    communityInfo: 'Закрытый посёлок с охраной, общим бассейном и зоной барбекю',
+    buildingInfo: '',
     complexName: 'Коттеджный посёлок «Аврора Парк»',
     buildYear: 2022,
     buildingClass: 'business',
@@ -100,16 +102,14 @@ window.BS = window.BS || {};
      links out to Timeweb instead (152-ФЗ data localization — see
      supabase/migrations/0007_agent_id_link.sql), only the server can
      resolve that phone number for display, since Timeweb is never reachable
-     from the browser. Resolves to: null (not found / request failed),
-     { expired: true } (found, but its free-tier clock ran out and nothing
-     since covers it), or the normal mapped listing. */
+     from the browser. Resolves to null (not found / request failed) or the
+     normal mapped listing. */
   function loadListingFromServer(id) {
     return fetch('/api/listings/' + encodeURIComponent(id) + '/view').then(function (res) {
       if (!res.ok) return null;
       return res.json();
     }).then(function (row) {
       if (!row) return null;
-      if (row.expired) return { expired: true };
       return mapRowToListing(row);
     }).catch(function (err) {
       console.warn('loadListingFromServer failed:', err);
@@ -153,6 +153,8 @@ window.BS = window.BS || {};
       security: row.security,
       autoGate: row.auto_gate,
       extraFeatures: row.extra_features,
+      communityInfo: row.community_info,
+      buildingInfo: row.building_info,
       complexName: row.complex_name,
       buildYear: row.build_year,
       buildingClass: row.building_class,
@@ -192,7 +194,6 @@ window.BS = window.BS || {};
   var viewLanding = document.getElementById('view-landing');
   var viewForm = document.getElementById('view-form');
   var viewPreview = document.getElementById('view-preview');
-  var viewPricing = document.getElementById('view-pricing');
   var deckBackBtn = document.getElementById('deckBack');
 
   /* ---------------- Edit-access gate (/edit/<id>) ----------------
@@ -239,29 +240,18 @@ window.BS = window.BS || {};
   function currentView() {
     if (editListingId()) return 'edit';
     if (location.pathname.startsWith('/preview') || sharedListingId()) return 'preview';
-    if (location.pathname.startsWith('/pricing')) return 'pricing';
     if (location.pathname.startsWith('/new-listing')) return 'form';
     return 'landing';
   }
 
-  // Renders the shared "not found" / "expired" stage states used by both
-  // the public /p/<id> view and the agent's own /edit/<id> view. Returns
-  // true if it handled (drew) a failure state, false if `listing` is
-  // usable and the caller should proceed to render it.
+  // Renders the shared "not found" stage state used by both the public
+  // /p/<id> view and the agent's own /edit/<id> view. Returns true if it
+  // handled (drew) a failure state, false if `listing` is usable and the
+  // caller should proceed to render it.
   function renderLoadFailure(stageEl, listing) {
     var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
     if (!listing) {
       if (stageEl) stageEl.innerHTML = '<div class="deck-status-msg">' + t('deckNotFound') + '</div>';
-      return true;
-    }
-    if (listing.expired) {
-      if (stageEl) {
-        stageEl.innerHTML =
-          '<div class="deck-status-msg deck-expired-msg">' +
-            '<p>' + t('deckExpiredTitle') + '</p>' +
-            '<a href="/pricing" class="btn btn-primary" data-nav>' + t('deckExpiredCta') + '</a>' +
-          '</div>';
-      }
       return true;
     }
     return false;
@@ -274,7 +264,7 @@ window.BS = window.BS || {};
   // visible — only ever called once editAuthorized(id) is true.
   function loadAndShowEdit(id) {
     pendingEditId = id;
-    viewLanding.hidden = true; viewForm.hidden = true; viewPricing.hidden = true; viewPreview.hidden = false;
+    viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
     // Not shown until the listing has actually loaded (showPreview(true)
     // below) — avoids a stray, non-functional edit button on the
     // loading/not-found stage states.
@@ -329,7 +319,7 @@ window.BS = window.BS || {};
     if (view === 'edit') {
       var editId = editListingId();
       if (!editAuthorized(editId)) {
-        viewLanding.hidden = true; viewForm.hidden = true; viewPricing.hidden = true; viewPreview.hidden = false;
+        viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
         var gateStageEl = document.getElementById('stage');
         if (gateStageEl) gateStageEl.innerHTML = '';
         if (deckBackBtn) deckBackBtn.hidden = true;
@@ -356,7 +346,7 @@ window.BS = window.BS || {};
         return;
       }
       pendingShareId = shareId;
-      viewLanding.hidden = true; viewForm.hidden = true; viewPricing.hidden = true; viewPreview.hidden = false;
+      viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
       // Hidden immediately, not just after showPreview(false) below — a
       // public /p/<id> must never show "← Редактировать", including while
       // still loading or if the listing turns out not to exist, not only
@@ -389,7 +379,6 @@ window.BS = window.BS || {};
     viewLanding.hidden = view !== 'landing';
     viewForm.hidden = view !== 'form';
     viewPreview.hidden = view !== 'preview';
-    viewPricing.hidden = view !== 'pricing';
     // The only other way to reach 'preview' is the agent's own same-tab
     // flow right after submitting the form (BS.listing is already theirs —
     // see finishSubmit) — edit access always allowed there.
@@ -405,7 +394,7 @@ window.BS = window.BS || {};
   // /edit/<id>; always false for a public /p/<id> view. See showPreview's
   // callers above for exactly which route passes which.
   function showPreview(allowEdit) {
-    viewLanding.hidden = true; viewForm.hidden = true; viewPricing.hidden = true; viewPreview.hidden = false;
+    viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
     if (deckBackBtn) deckBackBtn.hidden = !allowEdit;
     if (window.BSDeck) window.BSDeck.render(BS.listing);
     if (window.BSI18n) window.BSI18n.apply();
@@ -431,14 +420,14 @@ window.BS = window.BS || {};
 
   renderRoute();
 
-  /* ---------------- Finalize / edit-lock (see server.js + supabase/
-     migrations/0002_finalize_and_credits.sql for the full model) ----------
-     Creating a listing is always free. Editing one is free and unlimited
-     right up until it's finalized (Share / Download PDF) — after that,
-     editing or finalizing it again needs a credit or an active
-     subscription. Both gates below talk to the server (which is the only
-     thing that can see credits/subscriptions — service_role only) and
-     share one generic confirm-or-block modal. */
+  /* ---------------- Finalize / edit-lock ----------------
+     Everything is free and unlimited. Finalizing (Share / Download PDF)
+     just locks the listing so a shared /p/<id> link keeps showing what was
+     actually shared rather than whatever's mid-edit; reopening it for
+     another edit is always allowed. Both talk to the server, which is the
+     only thing allowed to write to the listings row, and share one generic
+     info modal for the few things that can still go wrong (still saving,
+     network hiccup). */
 
   var finalizeModalEl = document.getElementById('finalizeModal');
   var finalizeModalMessageEl = document.getElementById('finalizeModalMessage');
@@ -470,28 +459,10 @@ window.BS = window.BS || {};
     showFinalizeModal(message, [{ label: t('finalizeBlockedClose'), primary: true }]);
   }
 
-  function showBlockedModal() {
-    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
-    showFinalizeModal(t('finalizeBlockedMessage'), [
-      { label: t('finalizeBlockedClose'), primary: false },
-      { label: t('finalizeGoPay'), primary: true, onClick: function () { navigate('/pricing'); } },
-    ]);
-  }
-
-  function finalizeRequest(id, confirm) {
-    return fetch('/api/listings/' + id + '/finalize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ confirm: !!confirm }),
-    }).then(function (res) { return res.json(); });
-  }
-
   /* Call before actually sharing the link or building the PDF. onApproved
-     runs once the action is genuinely allowed to proceed (immediately, or
-     after the agent confirms a free/credit modal) — never runs if blocked
-     or redirected to /pricing. Network hiccup: fail open, same as every
-     other check in this file — a broken finalize check shouldn't be the
-     thing standing between a legitimate agent and their own presentation. */
+     runs once the finalize call comes back (or immediately, on a network
+     hiccup — a broken finalize check shouldn't be the thing standing
+     between a legitimate agent and their own presentation). */
   function requestFinalize(listing, onApproved) {
     var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
     if (!listing || !listing.id) {
@@ -506,52 +477,30 @@ window.BS = window.BS || {};
       }
       return;
     }
-    finalizeRequest(listing.id, false).then(function (data) {
-      if (data.unlimited || data.finalized) { onApproved(); return; }
-      if (data.blocked) { showBlockedModal(); return; }
-      if (data.needsPayment) { navigate('/pricing'); return; }
-      if (data.needsConfirm) {
-        var message = data.cost === 'credit'
-          ? t('finalizeConfirmCredit', { credits: data.creditsRemaining })
-          : t('finalizeConfirmFree');
-        showFinalizeModal(message, [
-          { label: t('finalizeCancel'), primary: false },
-          { label: t('finalizeContinue'), primary: true, onClick: function () {
-            finalizeRequest(listing.id, true).then(function (data2) {
-              if (data2.ok) { listing.isFinalized = true; onApproved(); }
-              else showInfoModal(t('finalizeError'));
-            }).catch(function () { onApproved(); });
-          } },
-        ]);
-        return;
-      }
-      onApproved();
-    }).catch(function (err) {
-      console.warn('finalize check failed, allowing through:', err);
-      onApproved();
-    });
+    fetch('/api/listings/' + listing.id + '/finalize', { method: 'POST' }).then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.ok || data.finalized) listing.isFinalized = true;
+        else showInfoModal(t('finalizeError'));
+        onApproved();
+      }).catch(function (err) {
+        console.warn('finalize request failed, allowing through:', err);
+        onApproved();
+      });
   }
   BS.requestFinalize = requestFinalize;
 
-  /* Call before navigating to the edit form. Unlike requestFinalize, a
-     "yes you may edit" answer here silently reopens the listing (no
-     confirm modal — spending the credit itself happens later, only if
-     they go on to finalize again; see requestFinalize/handleListingReopen). */
+  /* Call before navigating to the edit form. Reopening a finalized listing
+     is free and always allowed — this just clears is_finalized server-side
+     so the resulting deck no longer reads as locked. */
   function requestEditAccess(listing, onApproved) {
     if (!listing || !listing.id || !listing.isFinalized) { onApproved(); return; }
-    fetch('/api/listings/' + listing.id + '/access').then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (!data.isFinalized) { onApproved(); return; }
-        if (!data.canEdit) { showBlockedModal(); return; }
-        return fetch('/api/listings/' + listing.id + '/reopen', { method: 'POST' })
-          .then(function (res) { return res.json(); })
-          .then(function (r) {
-            if (r.ok) { listing.isFinalized = false; onApproved(); }
-            else showBlockedModal();
-          });
+    fetch('/api/listings/' + listing.id + '/reopen', { method: 'POST' }).then(function (res) { return res.json(); })
+      .then(function (r) {
+        if (r.ok) listing.isFinalized = false;
+        onApproved();
       })
       .catch(function (err) {
-        console.warn('edit-access check failed, allowing through:', err);
+        console.warn('reopen request failed, allowing through:', err);
         onApproved();
       });
   }
@@ -581,77 +530,6 @@ window.BS = window.BS || {};
       }
     });
   });
-
-  /* ---------------- Pricing: real Prodamus (payform.ru) payment ---------------- */
-  /* "Оплатить" reveals the panel for the chosen plan; "Перейти к оплате"
-     asks the server for a signed payform.ru checkout link for that plan +
-     phone (POST /api/pricing/pay — see handlePricingPay in server.js) and
-     sends the browser there. Prodamus's own webhook credits the agent
-     automatically once paid (processProdamusPayment in server.js) — there's
-     no confirmation step left to poll for here. */
-  var pricingPaymentEl = document.getElementById('pricingPayment');
-  if (pricingPaymentEl) {
-    var pricingPaymentPlanEl = document.getElementById('pricingPaymentPlan');
-    var pricingPayPhoneEl = document.getElementById('pricingPayPhone');
-    var pricingPayPhoneErrorEl = document.getElementById('pricingPayPhoneError');
-    var pricingPayErrorEl = document.getElementById('pricingPayError');
-    var pricingPayGoEl = document.getElementById('pricingPayGo');
-    var pricingActivePlanKey = null;
-
-    document.querySelectorAll('.pricing-card-pay').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        pricingActivePlanKey = btn.getAttribute('data-plan-key');
-        if (pricingPaymentPlanEl) {
-          pricingPaymentPlanEl.textContent = btn.getAttribute('data-plan-name') + ' — ' + btn.getAttribute('data-plan-price');
-        }
-        if (pricingPayPhoneEl) pricingPayPhoneEl.value = (BS.listing && BS.listing.agentPhone) || '';
-        if (pricingPayPhoneErrorEl) pricingPayPhoneErrorEl.classList.remove('visible');
-        if (pricingPayErrorEl) pricingPayErrorEl.hidden = true;
-        pricingPaymentEl.hidden = false;
-        pricingPaymentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
-
-    var pricingPaymentCloseEl = document.getElementById('pricingPaymentClose');
-    if (pricingPaymentCloseEl) pricingPaymentCloseEl.addEventListener('click', function () {
-      pricingPaymentEl.hidden = true;
-    });
-
-    if (pricingPayGoEl) pricingPayGoEl.addEventListener('click', function () {
-      var phone = pricingPayPhoneEl ? pricingPayPhoneEl.value : '';
-      if (String(phone || '').replace(/\D/g, '').length < 10) {
-        if (pricingPayPhoneErrorEl) pricingPayPhoneErrorEl.classList.add('visible');
-        return;
-      }
-      if (pricingPayPhoneErrorEl) pricingPayPhoneErrorEl.classList.remove('visible');
-      // Paying is what actually sends this phone number to Prodamus (and,
-      // through Prodamus, to its own subprocessors — see payment-consent.html)
-      // — same "block, show inline error" gate as fConsent on the listing
-      // form, wired via wireReadToEndConsent() further down this file.
-      if (!pricingConsentEl.checked) {
-        pricingConsentError.classList.add('visible');
-        return;
-      }
-      pricingConsentError.classList.remove('visible');
-      if (pricingPayErrorEl) pricingPayErrorEl.hidden = true;
-      pricingPayGoEl.disabled = true;
-      // Back to the agent's own edit view (not the public /p/<id> link) —
-      // they're paying specifically to unlock editing/finalizing again.
-      var returnPath = (BS.listing && BS.listing.id) ? '/edit/' + BS.listing.id : '/pricing';
-      fetch('/api/pricing/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: pricingActivePlanKey, phone: phone, returnPath: returnPath }),
-      }).then(function (res) { return res.json(); }).then(function (data) {
-        if (data && data.url) { location.href = data.url; return; }
-        throw new Error(data && data.error || 'no url');
-      }).catch(function (err) {
-        console.warn('pricing pay failed:', err);
-        pricingPayGoEl.disabled = false;
-        if (pricingPayErrorEl) pricingPayErrorEl.hidden = false;
-      });
-    });
-  }
 
   /* ---------------- Coordinates paste (Yandex Maps) ---------------- */
   /* Yandex Maps' own "Что здесь" popup puts a single "lat, lng" string on
@@ -894,6 +772,12 @@ window.BS = window.BS || {};
       document.getElementById('fGarageSpaces').value = '';
       document.getElementById('fAutoGate').checked = false;
       document.getElementById('fFloors').value = '';
+      // The other type's "О посёлке"/"О ЖК" text is hidden now, not just
+      // visually — clear it so a stale value never quietly rides along
+      // into the presentation if the agent switches type again later.
+      document.getElementById('fCommunityInfo').value = '';
+    } else {
+      document.getElementById('fBuildingInfo').value = '';
     }
     renderPhotoSlotsUI();
   }
@@ -1095,6 +979,8 @@ window.BS = window.BS || {};
     document.getElementById('fSecurity').checked = !!listing.security;
     document.getElementById('fAutoGate').checked = !!listing.autoGate;
     document.getElementById('fExtraFeatures').value = listing.extraFeatures || '';
+    document.getElementById('fCommunityInfo').value = listing.communityInfo || '';
+    document.getElementById('fBuildingInfo').value = listing.buildingInfo || '';
     document.getElementById('fComplexName').value = listing.complexName || '';
     document.getElementById('fBuildYear').value = listing.buildYear != null ? listing.buildYear : '';
     document.getElementById('fBuildingClass').value = listing.buildingClass || '';
@@ -1145,11 +1031,7 @@ window.BS = window.BS || {};
      inline error" pattern as fAgentPhone above. novalidate is set on the
      form (every other required field is checked here in JS too), so a
      plain `required` attribute on the checkbox wouldn't do anything on
-     its own. pricingConsent below (/pricing payment panel — the data that
-     actually reaches Prodamus) reuses the exact same "must scroll a policy
-     iframe to its end before the checkbox unlocks" gate via
-     wireReadToEndConsent(), rather than a second copy of the scroll-tracking
-     logic. */
+     its own. */
   function wireReadToEndConsent(opts) {
     var checkboxEl = opts.checkboxEl;
     var errorEl = opts.errorEl;
@@ -1235,22 +1117,6 @@ window.BS = window.BS || {};
     policyModalEl.hidden = true;
   });
 
-  var pricingConsentEl = document.getElementById('pricingConsent');
-  var pricingConsentError = document.getElementById('pricingConsentError');
-  var pricingConsentModalEl = document.getElementById('pricingConsentModal');
-  wireReadToEndConsent({
-    checkboxEl: pricingConsentEl,
-    errorEl: pricingConsentError,
-    modalEl: pricingConsentModalEl,
-    frameEl: document.getElementById('pricingConsentFrame'),
-    hintEl: document.getElementById('pricingConsentModalHint'),
-    linkEl: document.getElementById('pricingConsentLink'),
-    hintReadKey: 'pricingConsentModalHintRead',
-  });
-  document.getElementById('pricingConsentModalClose').addEventListener('click', function () {
-    pricingConsentModalEl.hidden = true;
-  });
-
   function val(id) { return document.getElementById(id).value.trim(); }
   function num(id) { var v = val(id); return v === '' ? null : Number(v); }
   function bool(id) { return document.getElementById(id).checked; }
@@ -1264,7 +1130,7 @@ window.BS = window.BS || {};
      itself (.field-required-missing / -label, css/style.css) uses a
      dedicated warning color distinct from the site's muted editorial
      accent specifically so it reads as "unfinished" at a glance. */
-  var REQUIRED_FIELD_IDS = ['fTitle', 'fLocationName', 'fLat', 'fLng', 'fHouseArea', 'fBedrooms', 'fBathrooms', 'fAgentPhone'];
+  var REQUIRED_FIELD_IDS = ['fTitle', 'fAgentName', 'fAgentPhone'];
 
   function setFieldMissing(id, isMissing) {
     var el = document.getElementById(id);
@@ -1289,11 +1155,9 @@ window.BS = window.BS || {};
   form.addEventListener('input', updateRequiredHighlights);
   updateRequiredHighlights();
 
-  /* Creating a listing is always free and unrestricted, regardless of
-     credits/subscription — the finalize gate (see requestFinalize below)
-     only ever applies to an *existing* listing being edited/re-submitted
-     after it was already finalized. See supabase/migrations/
-     0002_finalize_and_credits.sql for the full model. */
+  /* Creating a listing is always free and unrestricted. Editing an existing
+     one just needs its owning phone number to match (see handleListingEditAuth
+     / handleCreateListing's ownership check in server.js). */
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -1351,6 +1215,8 @@ window.BS = window.BS || {};
       security: bool('fSecurity'),
       autoGate: bool('fAutoGate'),
       extraFeatures: val('fExtraFeatures'),
+      communityInfo: val('fCommunityInfo'),
+      buildingInfo: val('fBuildingInfo'),
       complexName: val('fComplexName'),
       buildYear: num('fBuildYear'),
       buildingClass: val('fBuildingClass'),
@@ -1389,12 +1255,11 @@ window.BS = window.BS || {};
      the agent still gets their instant local /preview — it just isn't
      shareable yet. Same fail-open philosophy used throughout this file.
 
-     A 403 means the id being updated was finalized and the phone has
-     neither a credit nor an active subscription to reopen it (this
-     shouldn't normally happen — requestEditAccess() already checks before
-     the agent even reaches the form — but a second tab, or credits
-     changing mid-edit, can still race it) — surfaced with the same
-     blocked-modal every other finalize-lock check uses. */
+     A 403 means the submitted phone number doesn't match the one this
+     listing was created with (server-side ownership check — this
+     shouldn't normally happen since the edit form itself is gated behind
+     typing that exact phone, see the edit-auth modal, but a second tab or
+     a since-changed phone can still race it). */
   function persistListing(listing) {
     listing._persistError = null;
     fetch('/api/listings', {
@@ -1402,7 +1267,11 @@ window.BS = window.BS || {};
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(listing),
     }).then(function (res) {
-      if (res.status === 403) { showBlockedModal(); return null; }
+      if (res.status === 403) {
+        var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+        showInfoModal(t('finalizeError'));
+        return null;
+      }
       // A non-403 failure (e.g. the server's Supabase env vars aren't set)
       // leaves listing.id unset forever, not just "for now" — recorded here
       // so requestFinalize below can tell a real, permanent failure apart

@@ -82,7 +82,6 @@ create table if not exists public.phone_whitelist (
 );
 
 insert into public.phone_whitelist (phone_normalized, label) values
-  ('6922881848', '+66 92 288 1848'),
   ('9371667555', '+7 937 166 75 55')
 on conflict (phone_normalized) do nothing;
 

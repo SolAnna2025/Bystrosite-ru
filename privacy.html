@@ -14,10 +14,9 @@
 <!-- Same js/i18n.js dictionary as the rest of the site (see the "Privacy
      policy page" keys in js/i18n.js) — not a separate/duplicated
      translation file. This is a Russian legal document (152-ФЗ) with no
-     English version (same reasoning oferta.html's own comment gives for
-     skipping a lang switch there — translating "самозанятая"/ИНН/152-ФЗ
-     citations would be inaccurate, not helpful), so unlike the rest of the
-     site this page has no RU/EN switch. Every data-i18n element below
+     English version — translating "самозанятая"/ИНН/152-ФЗ citations would
+     be inaccurate, not helpful — so unlike the rest of the site this page
+     has no RU/EN switch. Every data-i18n element below
      keeps its real Russian text as a static fallback (same convention as
      index.html) so the policy is still fully readable if JS fails to load,
      rather than sitting blank. -->
@@ -43,7 +42,7 @@
   <h2 data-i18n="policySec3Title">3. Какие данные собираются и цель обработки</h2>
   <p data-i18n="policySec3Intro">При использовании Сервиса Оператор обрабатывает следующие персональные данные пользователя:</p>
   <ul>
-    <li data-i18n="policySec3Li1">номер телефона агента — используется для идентификации пользователя, начисления и списания оплаты за услуги Сервиса, проверки условий бесплатного тарифа и связи с пользователем по вопросам работы Сервиса;</li>
+    <li data-i18n="policySec3Li1">номер телефона агента — используется для идентификации пользователя и связи с пользователем по вопросам работы Сервиса;</li>
     <li data-i18n="policySec3Li2">имя и фотография агента — используются для идентификации агента и отображения на создаваемой им странице презентации; хранятся тем же способом, что и номер телефона (см. раздел 5);</li>
     <li data-i18n="policySec3Li3">логотип, название агентства/компании, фотографии объекта недвижимости, описание, цена и иные сведения, которые пользователь добровольно указывает для отображения на создаваемой им странице презентации, — используются исключительно для формирования и публичного отображения этой презентации по прямой ссылке.</li>
   </ul>
@@ -63,7 +62,6 @@
   <p data-i18n="policySec7Intro">Оператор не передаёт персональные данные третьим лицам, за исключением:</p>
   <ul>
     <li data-i18n="policySec7Li1">облачной инфраструктуры, на которой физически размещены персональные данные (сервер на территории Российской Федерации), — используется исключительно для хранения по поручению Оператора, без самостоятельного доступа к данным для собственных целей;</li>
-    <li data-i18n="policySec7Li2">платёжного оператора ООО «Продамус», которому номер телефона передаётся при оплате услуг Сервиса на странице /pricing — согласие на такую передачу пользователь даёт отдельно, на странице /payment-consent, до совершения оплаты;</li>
     <li data-i18n="policySec7Li3">случаев, прямо предусмотренных законодательством Российской Федерации, — по законному требованию уполномоченных государственных органов.</li>
   </ul>
   <p data-i18n="policySec7Outro">Публичное отображение номера телефона на странице презентации, созданной по прямому волеизъявлению самого пользователя, не является передачей третьим лицам в смысле настоящей Политики — это основная функциональность Сервиса, на использование которой пользователь даёт согласие.</p>
@@ -97,8 +95,6 @@
 <footer class="app-footer">
   <p data-i18n="footerCopyright">© Быстросайт. Все права защищены.</p>
   <p data-i18n="footerLegalInfo">Самозанятый Соломинова Анна Викторовна · ИНН 027600146568</p>
-  <p><a href="/oferta" data-i18n="footerOfertaLink">Публичная оферта</a></p>
-  <p><a href="/pricing" data-i18n="footerPricingLink">Тарифы</a></p>
 </footer>
 
 <script src="js/i18n.js"></script>
