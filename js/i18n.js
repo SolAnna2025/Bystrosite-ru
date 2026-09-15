@@ -17,7 +17,7 @@ window.BSI18n = (function () {
 
       landingTitle: 'Премиальная интерактивная презентация с живой картой и калькулятором доходности',
       landingSubtitle: 'Заполните карточку объекта — получите готовую презентацию в архитектурно-издательском стиле: удобный PDF для скачивания и интерактивная веб-версия для клиента с калькулятором доходности. Слайд за слайдом, как в примере ниже.',
-      landingBadge: 'Первая презентация — бесплатно',
+      landingBadge: 'Бесплатно и без ограничений',
       landingCta: 'Создать свою презентацию →',
 
       formTitle: 'Новый объект',
@@ -338,7 +338,7 @@ window.BSI18n = (function () {
 
       landingTitle: 'A premium interactive presentation with a live map and rental-yield calculator',
       landingSubtitle: 'Fill in the property card — get a finished presentation in an editorial-architectural style: a convenient downloadable PDF and an interactive web version for the client with a rental-yield calculator. Slide by slide, like the example below.',
-      landingBadge: 'First presentation is free',
+      landingBadge: 'Free, no limits',
       landingCta: 'Build your own presentation →',
 
       formTitle: 'New Listing',

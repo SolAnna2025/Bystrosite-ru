@@ -1049,6 +1049,12 @@ window.BSDeck = (function () {
         '</div>'
       );
     }).join('');
+    // Unlike the real deck (inactive slides start display:none, so their
+    // Location iframe lazy-loads via activateLazyIframes only once shown —
+    // see its own comment), every thumbnail is visible right away, so the
+    // Location thumbnail's map iframe needs the same data-src -> src
+    // promotion done here instead, or it stays a blank box forever.
+    activateLazyIframes(container);
   }
 
   return { render: render, renderThumbnails: renderThumbnails };
