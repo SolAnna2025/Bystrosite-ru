@@ -53,6 +53,23 @@ h1, h2, h3, h4 {
 
 a { color: var(--color-accent-dark); }
 img { display: block; max-width: 100%; }
+
+/* ---------------- Copy-protection friction ----------------
+   Pairs with the contextmenu/dragstart/copy/cut/keydown blocking in
+   js/app.js — see its comment for the full rationale and honest limits.
+   .policy-shell (privacy.html's legal text) is deliberately exempted: a
+   visitor reasonably wants to select/copy policy text (e.g. the operator's
+   contact handle), and privacy.html doesn't load js/app.js at all, so
+   leaving this rule active there without the JS half would be an
+   inconsistent, purely cosmetic restriction with no matching protection
+   behind it. Editable fields stay selectable everywhere, form usability
+   first. */
+body { -webkit-user-select: none; user-select: none; }
+.policy-shell, .policy-shell * ,
+input, textarea, [contenteditable] {
+  -webkit-user-select: text; user-select: text;
+}
+img { -webkit-user-drag: none; user-drag: none; }
 figure { margin: 0; }
 
 /* The native `hidden` attribute loses to any class that sets its own

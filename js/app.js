@@ -9,6 +9,49 @@ window.BS = window.BS || {};
 (function () {
   'use strict';
 
+  /* ---------------- Copy-protection friction ----------------
+     Raises the bar for a casual visitor trying to lift a listing's photos/
+     text/phone number or poke at how the site works: no right-click, no
+     text selection, no image drag, no copy/cut, and the common devtools/
+     view-source shortcuts are swallowed. Every rule below carves out
+     <input>/<textarea>/[contenteditable] so the agent's own form (typing,
+     pasting an address or description, etc.) is completely unaffected —
+     see isEditableTarget.
+
+     Not, and cannot be, real security: this is all client-side JS running
+     in the visitor's own browser, same as the rest of this file. Nothing
+     here stops someone who disables JavaScript, opens DevTools anyway (the
+     shortcuts below are trivially reassignable/bypassable, and DevTools can
+     also be opened via the browser's own menu, which no page can intercept),
+     or simply fetches a URL directly (curl, "Save Page As", the network
+     tab) — the HTML/CSS/JS/images are necessarily sent to every browser
+     that loads the page. See scripts/build.js's own comment on terser
+     mangling for the same caveat applied to the shipped source itself:
+     minified/mangled, not secret. */
+  function isEditableTarget(el) {
+    return !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable));
+  }
+  document.addEventListener('contextmenu', function (e) {
+    if (!isEditableTarget(e.target)) e.preventDefault();
+  });
+  document.addEventListener('dragstart', function (e) {
+    if (!isEditableTarget(e.target)) e.preventDefault();
+  });
+  ['copy', 'cut'].forEach(function (evt) {
+    document.addEventListener(evt, function (e) {
+      if (!isEditableTarget(e.target)) e.preventDefault();
+    });
+  });
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    var isDevToolsCombo =
+      k === 'F12' ||
+      ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'I' || k === 'i' || k === 'J' || k === 'j' || k === 'C' || k === 'c')) ||
+      ((e.ctrlKey || e.metaKey) && !e.shiftKey && (k === 'U' || k === 'u')) ||
+      (e.metaKey && e.altKey && (k === 'I' || k === 'i' || k === 'J' || k === 'j' || k === 'C' || k === 'c'));
+    if (isDevToolsCombo) e.preventDefault();
+  });
+
   BS.listing = null; // set on submit
   BS.logo = null;     // { name, dataUrl } | null
 
