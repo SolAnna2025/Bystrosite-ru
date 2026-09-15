@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Быстросайт — конструктор презентаций недвижимости</title>
+
+<!-- Tab favicon + "Add to Home Screen" icon (iOS/Android) — a wine-brown
+     medallion with a serif "Б", matching .app-brand-mark/.app-brand-name
+     (css/style.css) scaled up into an icon. Generated PNGs (no source
+     design file — see assets/icons/); without apple-touch-icon specifically,
+     iOS silently falls back to an auto-generated grey initial tile instead
+     of leaving the icon blank, which is what prompted adding this. -->
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="assets/manifest.webmanifest">
+<meta name="theme-color" content="#342822">
+<meta name="apple-mobile-web-app-title" content="Быстросайт">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
 <!-- Every asset below is referenced with a relative path (css/..., js/...,
      assets/...). That resolved fine while every route was one path segment
      deep (/, /new-listing, /preview) — /p/<id> is two segments

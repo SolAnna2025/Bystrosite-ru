@@ -1,0 +1,12 @@
+{
+  "name": "Быстросайт — конструктор презентаций недвижимости",
+  "short_name": "Быстросайт",
+  "start_url": "/new-listing",
+  "display": "standalone",
+  "background_color": "#f2efe8",
+  "theme_color": "#342822",
+  "icons": [
+    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ]
+}
