@@ -215,16 +215,25 @@ window.BS = window.BS || {};
   var editGateSubmitEl = document.getElementById('editGateSubmit');
   var editGatePendingId = null;
 
+  // Set only at the two places BS.listing is assigned through a genuinely
+  // phone-verified path — finishSubmit/persistListing (the agent just typed
+  // their own phone into the form) and loadAndShowEdit (only ever reached
+  // after editAuthorized() already passed once). Deliberately NOT set when
+  // BS.listing is assigned from the public /p/<id> view (renderRoute's
+  // shareId branch) — anyone with that link can load it, no phone required,
+  // so its id alone must never be enough to prove ownership below.
+  var editAuthorizedListingId = null;
+
   function markEditAuthorized(id) {
     try { sessionStorage.setItem(EDIT_AUTH_PREFIX + id, '1'); } catch (e) {}
   }
 
   function editAuthorized(id) {
-    // A listing this tab already has in memory was necessarily just
-    // created or edited *in this same tab*, through the real form (which
-    // requires typing the agent phone in) — that alone already proves
-    // ownership just as well as the gate below would.
-    if (BS.listing && BS.listing.id === id) return true;
+    // A listing this tab already has in memory *and* just went through a
+    // phone-verified path for that same id — see editAuthorizedListingId
+    // above — proves ownership just as well as the sessionStorage gate
+    // below would, without a fresh round-trip.
+    if (BS.listing && BS.listing.id === id && editAuthorizedListingId === id) return true;
     try { return sessionStorage.getItem(EDIT_AUTH_PREFIX + id) === '1'; } catch (e) { return false; }
   }
 
@@ -277,6 +286,7 @@ window.BS = window.BS || {};
       if (pendingEditId !== id) return; // navigated elsewhere while this was in flight
       if (renderLoadFailure(stageEl, listing)) return;
       BS.listing = listing;
+      editAuthorizedListingId = id; // only reached once editAuthorized(id) already passed once — see its definition
       // The agent's own working language for this edit session follows the
       // listing's own stored language (persisted — this becomes the active
       // language for the form too if they go on to "← Редактировать").
@@ -364,6 +374,10 @@ window.BS = window.BS || {};
         if (pendingShareId !== shareId) return; // navigated elsewhere while this was in flight
         if (renderLoadFailure(stageEl, listing)) return;
         BS.listing = listing;
+        // Deliberately NOT setting editAuthorizedListingId here — this is
+        // the public, no-phone-required view; see its definition above for
+        // why that distinction matters (this exact id/tab combination is
+        // what deckEditEntryBtn's click handler routes into /edit/<id>).
         // The *listing's own* fixed language, never this visitor's browser
         // locale/previously-saved preference — see 0005_language_and_edit_lockdown.sql.
         // persist:false so viewing someone else's shared link never
@@ -1261,7 +1275,7 @@ window.BS = window.BS || {};
       agentMessengers: selectedMessengers(),
       agentQr: Object.assign({}, BS.agentQr),
     };
-    if (existingId) BS.listing.id = existingId;
+    if (existingId) { BS.listing.id = existingId; editAuthorizedListingId = existingId; }
 
     navigate('/preview');
     persistListing(BS.listing);
@@ -1310,6 +1324,7 @@ window.BS = window.BS || {};
       // ownership as well as the /edit/<id> phone gate would, so mark it
       // authorized now rather than making a same-tab reload re-prompt.
       markEditAuthorized(data.id);
+      editAuthorizedListingId = data.id;
       if (location.pathname.startsWith('/preview')) {
         history.replaceState(null, '', '/edit/' + data.id);
       }
