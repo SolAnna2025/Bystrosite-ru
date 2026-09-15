@@ -35,24 +35,26 @@
      price/description of a villa) — a cold link preview with no other
      context read exactly like one before, which misled agents into thinking
      Быстросайт was offering them a specific villa rather than a tool that
-     builds presentations like this one. og:image now has a baked-in
-     "ПРИМЕР" badge for the same reason (see assets/stock/og-cover.jpg — a
-     screenshot-composited variant of cover.jpg, not a design-tool export).
-     og:image/og:url are absolute (bots generally require this, and a
-     relative one is exactly what let Telegram/Facebook's crawlers cache a
-     broken or stale preview instead of ever fetching the real image).
-     Currently pinned to the onrender.com domain — update these three if the
-     site ever moves to its own domain. -->
+     builds presentations like this one. og:image is a brand-styled promo
+     card instead (headline + an abstract product mockup — price chip,
+     map-pin badge — never a real listing photo, same reasoning), not a
+     screenshot of any actual presentation — see assets/og-cover.png (no
+     design-tool source file). og:image/og:url are absolute (bots generally
+     require this, and a relative one is exactly what let Telegram/
+     Facebook's crawlers cache a broken or stale preview instead of ever
+     fetching the real image). Pinned to the onrender.com domain — update
+     these three (plus twitter:image) if the site ever moves to its own
+     domain. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Быстросайт">
 <meta property="og:title" content="Быстросайт — конструктор презентаций для риелторов">
 <meta property="og:description" content="Заполните карточку объекта — получите готовую презентацию с картой, фото и контактами агента за минуты. Бесплатно и без ограничений.">
-<meta property="og:image" content="https://bystrosite.onrender.com/assets/stock/og-cover.jpg">
-<meta property="og:url" content="https://bystrosite.onrender.com/">
+<meta property="og:image" content="https://bystrosite-ru.onrender.com/assets/og-cover.png">
+<meta property="og:url" content="https://bystrosite-ru.onrender.com/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Быстросайт — конструктор презентаций для риелторов">
 <meta name="twitter:description" content="Заполните карточку объекта — получите готовую презентацию с картой, фото и контактами агента за минуты. Бесплатно и без ограничений.">
-<meta name="twitter:image" content="https://bystrosite.onrender.com/assets/stock/og-cover.jpg">
+<meta name="twitter:image" content="https://bystrosite-ru.onrender.com/assets/og-cover.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
