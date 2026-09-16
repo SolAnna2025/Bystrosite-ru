@@ -15,7 +15,7 @@ window.BSI18n = (function () {
       appBrandName: 'Быстросайт',
       appBrandTag: 'Конструктор презентаций объектов недвижимости',
 
-      landingTitle: 'Премиальная интерактивная презентация с живой картой и калькулятором доходности',
+      landingTitle: 'Премиальная интерактивная сайт-презентация для любой недвижимости — дом, квартира, земельный участок — с живой картой и калькулятором доходности',
       landingSubtitle: 'Заполните карточку объекта — получите готовую презентацию в архитектурно-издательском стиле: удобный PDF для скачивания и интерактивная веб-версия для клиента с калькулятором доходности. Слайд за слайдом, как в примере ниже.',
       landingBadge: 'Бесплатно и без ограничений',
       landingCta: 'Создать свою презентацию →',
@@ -222,7 +222,7 @@ window.BSI18n = (function () {
       deckSpecGarage: 'Гараж', deckSpecGarageUnit: 'машиноместа', deckSpecSecurity: 'Охрана',
       deckSpecSecurityVal: 'Круглосуточная', deckSpecGate: 'Ворота', deckSpecGateVal: 'Автоматические',
       deckSpecManagement: 'Управление', deckExtraLabel: 'Дополнительно',
-      deckCommunityInfoLabel: 'О посёлке', deckBuildingInfoLabel: 'О ЖК',
+      deckCommunitySlideLabel: 'Жилой комплекс / Населённый пункт',
 
       deckArchitectureLabel: 'Архитектура',
 
@@ -335,7 +335,7 @@ window.BSI18n = (function () {
       appBrandName: 'Bystrosite',
       appBrandTag: 'Real-estate presentation builder',
 
-      landingTitle: 'A premium interactive presentation with a live map and rental-yield calculator',
+      landingTitle: 'A premium interactive website presentation for any property — house, apartment, land plot — with a live map and rental-yield calculator',
       landingSubtitle: 'Fill in the property card — get a finished presentation in an editorial-architectural style: a convenient downloadable PDF and an interactive web version for the client with a rental-yield calculator. Slide by slide, like the example below.',
       landingBadge: 'Free, no limits',
       landingCta: 'Build your own presentation →',
@@ -542,7 +542,7 @@ window.BSI18n = (function () {
       deckSpecGarage: 'Garage', deckSpecGarageUnit: 'parking spaces', deckSpecSecurity: 'Security',
       deckSpecSecurityVal: '24/7', deckSpecGate: 'Gate', deckSpecGateVal: 'Automatic',
       deckSpecManagement: 'Management', deckExtraLabel: 'Additional',
-      deckCommunityInfoLabel: 'About the community', deckBuildingInfoLabel: 'About the building',
+      deckCommunitySlideLabel: 'Residential complex / Locality',
 
       deckArchitectureLabel: 'Architecture',
 

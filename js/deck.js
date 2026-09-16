@@ -195,20 +195,22 @@ window.BSDeck = (function () {
      on a standalone house with no managed complex around it just never
      fills in "О доме / ЖК" and this slide quietly doesn't exist.
 
-     Labeled "О посёлке"/"О ЖК" rather than the generic "О доме" — this
-     slide is about the surrounding development/complex, not the unit
-     itself — same toggle-by-propertyType convention as fFloors/fFloorNumber
-     (only one of communityInfo/buildingInfo ever has a value at a time,
-     js/app.js clears the other on type switch). That free-text field used
-     to render on the Living slide instead, which left this one looking
-     thin (just a spec row or two) whenever an agent filled it in. */
+     Labeled "Жилой комплекс / Населённый пункт" rather than the generic
+     "О доме" — this slide is about the surrounding development/complex,
+     not the unit itself. The label stays the same for both property
+     types now, but the underlying text field still toggles by
+     propertyType (only one of communityInfo/buildingInfo ever has a
+     value at a time, js/app.js clears the other on type switch). That
+     free-text field used to render on the Living slide instead, which
+     left this one looking thin (just a spec row or two) whenever an
+     agent filled it in. */
   function slideBuilding(l, n) {
     var communityText = l.propertyType === 'apartment' ? l.buildingInfo : l.communityInfo;
-    // The slide's own kicker/label (short: "О посёлке"/"О ЖК") vs. the
+    // The slide's own kicker/label (short, same for both types) vs. the
     // free-text block's sub-label (the longer form-field phrasing) — kept
     // distinct so the paragraph isn't introduced by a bare repeat of the
     // heading directly above it.
-    var communityLabel = l.propertyType === 'apartment' ? t('deckBuildingInfoLabel') : t('deckCommunityInfoLabel');
+    var communityLabel = t('deckCommunitySlideLabel');
     var communityTextLabel = l.propertyType === 'apartment' ? t('fBuildingInfoLabel') : t('fCommunityInfoLabel');
 
     var specs = [];
