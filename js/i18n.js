@@ -172,6 +172,8 @@ window.BSI18n = (function () {
       deckPdfError: 'Не удалось создать PDF. Попробуйте ещё раз.',
       deckLoading: 'Загрузка презентации…',
       deckNotFound: 'Презентация не найдена — возможно, ссылка устарела.',
+      deckExpired: 'Срок действия презентации истёк — прошло больше месяца с момента создания. Попросите агента обновить ссылку.',
+      deckValidityNote: 'Презентация действительна 1 месяц с момента создания',
       pdfMapFallback: 'Интерактивная карта доступна в веб-версии презентации',
       deckNavAria: 'Навигация по слайдам',
 
@@ -492,6 +494,8 @@ window.BSI18n = (function () {
       deckPdfError: 'Could not create the PDF. Please try again.',
       deckLoading: 'Loading presentation…',
       deckNotFound: 'Presentation not found — the link may be out of date.',
+      deckExpired: 'This presentation has expired — more than a month has passed since it was created. Ask the agent for a fresh link.',
+      deckValidityNote: 'This presentation is valid for 1 month from the date it was created',
       pdfMapFallback: 'The interactive map is available in the web version of the presentation',
       deckNavAria: 'Slide navigation',
 

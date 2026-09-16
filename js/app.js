@@ -225,6 +225,12 @@ window.BS = window.BS || {};
       agentMessengers: row.agent_messengers || [],
       agentQr: agentQr,
       isFinalized: !!row.is_finalized,
+      // Computed server-side, live, off expires_at (handlePublicListingView)
+      // — 30 days after creation, see supabase/migrations/0003_listing_expiry.sql.
+      // Only the public /p/<id> render path (renderRoute below) acts on
+      // this; the agent's own /edit/<id> ignores it, so an expired listing
+      // can always still be reopened and fixed.
+      isExpired: !!row.is_expired,
       // Fixed at creation server-side (see 0005_language_and_edit_lockdown.sql)
       // — the web view and PDF render in *this*, never the viewer's own
       // browser language. Old rows predate the column: default to 'ru'.
@@ -267,6 +273,15 @@ window.BS = window.BS || {};
   // so its id alone must never be enough to prove ownership below.
   var editAuthorizedListingId = null;
 
+  // This tab's proven edit_token for editAuthorizedListingId, once known —
+  // kept in memory rather than re-read from location.search on every use,
+  // because the "← Редактировать" button (deckBackBtn) navigates to
+  // /new-listing, which drops the ?t= query string entirely (this is a
+  // pushState SPA, not a reload, so the variable itself survives that;
+  // re-parsing the URL at that point would not). finishSubmit below is
+  // what actually needs it, for the resubmit that follows.
+  var currentEditToken = null;
+
   function markEditAuthorized(id) {
     try { sessionStorage.setItem(EDIT_AUTH_PREFIX + id, '1'); } catch (e) {}
   }
@@ -290,6 +305,16 @@ window.BS = window.BS || {};
     return m ? m[1] : null;
   }
 
+  // The secret half of /edit/<id>?t=<token> — see server.js
+  // handleListingEditAuth/0010_edit_token.sql. Read fresh off location.search
+  // each time rather than cached, since history.replaceState below can
+  // change it mid-session (a legacy listing's phone-auth upgrading to a
+  // real token).
+  function editTokenFromUrl() {
+    var m = /[?&]t=([0-9a-f]+)/i.exec(location.search);
+    return m ? m[1] : null;
+  }
+
   function currentView() {
     if (editListingId()) return 'edit';
     if (location.pathname.startsWith('/preview') || sharedListingId()) return 'preview';
@@ -308,6 +333,15 @@ window.BS = window.BS || {};
       return true;
     }
     return false;
+  }
+
+  // A public /p/<id> whose listing is past its 30-day lifespan (see
+  // supabase/migrations/0003_listing_expiry.sql, computed live server-side
+  // in handlePublicListingView) — shown instead of the deck, never as well
+  // as it. Only ever called from the shareId branch below.
+  function renderExpired(stageEl) {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    if (stageEl) stageEl.innerHTML = '<div class="deck-status-msg deck-expired-msg"><p>' + t('deckExpired') + '</p></div>';
   }
 
   var pendingShareId = null; // guards against a slower, stale fetch clobbering a newer navigation
@@ -338,6 +372,19 @@ window.BS = window.BS || {};
     });
   }
 
+  function showEditGateModal(editId) {
+    viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
+    var gateStageEl = document.getElementById('stage');
+    if (gateStageEl) gateStageEl.innerHTML = '';
+    if (deckBackBtn) deckBackBtn.hidden = true;
+    if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
+    editGatePendingId = editId;
+    editGatePhoneErrorEl.classList.remove('visible');
+    editGatePhoneEl.value = '';
+    editGateModalEl.hidden = false;
+    if (window.BSI18n) window.BSI18n.apply();
+  }
+
   function submitEditGate() {
     var id = editGatePendingId;
     if (!id) return;
@@ -352,6 +399,14 @@ window.BS = window.BS || {};
       if (data && data.ok) {
         markEditAuthorized(id);
         editGateModalEl.hidden = true;
+        // A freshly minted token (legacy row, first time authenticated by
+        // phone since edit_token existed — see server.js
+        // handleListingEditAuth) upgrades this /edit/<id> link so it never
+        // needs the public phone number again.
+        if (data.token) {
+          currentEditToken = data.token;
+          history.replaceState(null, '', '/edit/' + id + '?t=' + data.token);
+        }
         loadAndShowEdit(id);
       } else {
         editGatePhoneErrorEl.classList.add('visible');
@@ -367,6 +422,42 @@ window.BS = window.BS || {};
     if (e.key === 'Enter') { e.preventDefault(); submitEditGate(); }
   });
 
+  var pendingTokenAuthId = null;
+  var lastFailedTokenAuth = null; // "<id>:<token>" — stops a bad URL token from being retried in a loop
+
+  // Auto-auth path for /edit/<id>?t=<token> — skips the phone modal
+  // entirely when the URL already carries this listing's own edit_token
+  // (the normal case: the agent's own bookmarked/browser-history link from
+  // when they created or last edited it). Falls back to the phone modal on
+  // any failure (wrong/stale token).
+  function tryTokenAuth(id, token) {
+    pendingTokenAuthId = id;
+    viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
+    if (deckBackBtn) deckBackBtn.hidden = true;
+    if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
+    var stageEl = document.getElementById('stage');
+    if (stageEl) stageEl.innerHTML = '<div class="deck-status-msg">' + (window.BSI18n ? window.BSI18n.t('deckLoading') : 'Загрузка…') + '</div>';
+    fetch('/api/listings/' + id + '/edit-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token }),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      if (pendingTokenAuthId !== id) return; // navigated elsewhere while this was in flight
+      if (data && data.ok) {
+        markEditAuthorized(id);
+        currentEditToken = token;
+        loadAndShowEdit(id);
+      } else {
+        lastFailedTokenAuth = id + ':' + token;
+        showEditGateModal(id);
+      }
+    }).catch(function () {
+      if (pendingTokenAuthId !== id) return;
+      lastFailedTokenAuth = id + ':' + token;
+      showEditGateModal(id);
+    });
+  }
+
   function renderRoute() {
     var view = currentView();
     var shareId = sharedListingId();
@@ -374,18 +465,19 @@ window.BS = window.BS || {};
     if (view === 'edit') {
       var editId = editListingId();
       if (!editAuthorized(editId)) {
-        viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
-        var gateStageEl = document.getElementById('stage');
-        if (gateStageEl) gateStageEl.innerHTML = '';
-        if (deckBackBtn) deckBackBtn.hidden = true;
-        if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
-        editGatePendingId = editId;
-        editGatePhoneErrorEl.classList.remove('visible');
-        editGatePhoneEl.value = '';
-        editGateModalEl.hidden = false;
-        if (window.BSI18n) window.BSI18n.apply();
+        var urlToken = editTokenFromUrl();
+        if (urlToken && lastFailedTokenAuth !== (editId + ':' + urlToken)) {
+          tryTokenAuth(editId, urlToken);
+          return;
+        }
+        showEditGateModal(editId);
         return;
       }
+      // A real page reload (not just an SPA navigate()) keeps sessionStorage
+      // but resets currentEditToken to null — re-derive it from the URL
+      // (still there; only navigate('/new-listing') ever drops it, which
+      // can't have happened without a fresh renderRoute() of its own).
+      if (!currentEditToken) currentEditToken = editTokenFromUrl();
       editGateModalEl.hidden = true;
       if (BS.listing && BS.listing.id === editId) {
         showPreview(true);
@@ -398,6 +490,7 @@ window.BS = window.BS || {};
 
     if (view === 'preview' && shareId) {
       if (BS.listing && BS.listing.id === shareId) {
+        if (BS.listing.isExpired) { renderExpired(document.getElementById('stage')); return; }
         showPreview(false);
         return;
       }
@@ -416,6 +509,10 @@ window.BS = window.BS || {};
       loadListingFromServer(shareId).then(function (listing) {
         if (pendingShareId !== shareId) return; // navigated elsewhere while this was in flight
         if (renderLoadFailure(stageEl, listing)) return;
+        // Only the public /p/<id> render path enforces this — the agent's
+        // own /edit/<id> (loadAndShowEdit) never calls renderExpired, so an
+        // expired listing can always still be reopened and fixed there.
+        if (listing.isExpired) { renderExpired(stageEl); return; }
         BS.listing = listing;
         // Deliberately NOT setting editAuthorizedListingId here — this is
         // the public, no-phone-required view; see its definition above for
@@ -1264,6 +1361,14 @@ window.BS = window.BS || {};
     // creates a fresh row.
     var existingId = BS.listing && BS.listing.id;
     BS.listing = {
+      // The listing's edit_token, proving this save is really its owner —
+      // see server.js handleCreateListing/0010_edit_token.sql. Only
+      // meaningful on a re-edit; a brand new listing has no token yet, the
+      // server mints one and hands it back in the response instead (see
+      // persistListing below). Read off currentEditToken, not the URL
+      // directly — "← Редактировать" (deckBackBtn) navigates to
+      // /new-listing first, which drops the ?t= query string.
+      editToken: existingId ? currentEditToken : null,
       // Fixed server-side at creation only (see 0005_language_and_edit_lockdown.sql
       // — an update's PATCH body never includes this key) — sent on every
       // submit anyway since a *new* listing needs it from its very first save.
@@ -1368,8 +1473,13 @@ window.BS = window.BS || {};
       // authorized now rather than making a same-tab reload re-prompt.
       markEditAuthorized(data.id);
       editAuthorizedListingId = data.id;
+      if (data.editToken) { listing.editToken = data.editToken; currentEditToken = data.editToken; }
       if (location.pathname.startsWith('/preview')) {
-        history.replaceState(null, '', '/edit/' + data.id);
+        // data.editToken only ever arrives on a fresh create (server.js) —
+        // this is the one moment the agent's browser learns their listing's
+        // real edit secret, so it has to land in the address bar now or
+        // it's gone (no login system to hand it back to them later).
+        history.replaceState(null, '', '/edit/' + data.id + (data.editToken ? '?t=' + data.editToken : ''));
       }
     }).catch(function (err) {
       listing._persistError = 'network';

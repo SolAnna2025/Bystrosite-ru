@@ -246,7 +246,7 @@ async function twGetAgentProfile(agentId) {
 }
 
 async function getListingRow(id) {
-  const res = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=id,agent_phone,agent_id,is_finalized,photos,logo_path,agent_photo_path,agent_qr');
+  const res = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=id,agent_phone,agent_id,is_finalized,photos,logo_path,agent_photo_path,agent_qr,edit_token');
   if (!res.ok) return null;
   const rows = await res.json();
   return rows.length ? rows[0] : null;
@@ -273,6 +273,13 @@ async function handlePublicListingView(req, res, id) {
     if (!rows.length) { sendJson(res, 200, null); return; }
     const row = rows[0];
 
+    // edit_token is this listing's own edit secret (0010_edit_token.sql) —
+    // never sent to the browser, including on the agent's own /edit/<id>
+    // reload, which only ever needs it back-channel, in the URL it already
+    // has. Leaking it here would recreate the exact hole it fixes.
+    delete row.edit_token;
+    row.is_expired = !!(row.expires_at && new Date(row.expires_at) < new Date());
+
     if (timeweb.configured() && row.agent_id) {
       row.agent_phone = await twGetAgentPhoneDisplay(row.agent_id);
       // agent_name/agent_photo_path are null on any row created once Timeweb
@@ -293,22 +300,38 @@ async function handlePublicListingView(req, res, id) {
 }
 
 /* ---------------- Edit auth (see LISTING_ACTION_RE "edit-auth") ----------
-   Быстросайт has no login system — a listing's "owner" has only ever been
-   "whoever knows its agent_phone" (same identity model the finalize/credits
-   gates already use). Before this, the *only* thing standing between a
-   random visitor with a /p/<id> link and full edit access to someone
-   else's listing was a client-side button — anyone could open devtools (or
-   just click "← Редактировать", nothing even checked) and start editing.
-   This endpoint is what /edit/<id> (js/app.js) calls to require the
-   listing's own phone number, typed deliberately, before that button is
-   even shown — see handleCreateListing below for the second half: the
-   actual update is *also* rejected unless the submitted agentPhone still
-   matches, so this isn't just a UI-only gate. */
+   Быстросайт has no login system, so a listing's "owner" has to be proven
+   some other way. That used to be "whoever knows its agent_phone" (same
+   identity model the finalize/credits gates already used) — but
+   agent_phone is also the number printed on the presentation's own contact
+   slide (js/deck.js slideFinal), so every client who received a /p/<id>
+   link already had everything needed to open /edit/<id> and rewrite the
+   listing themselves. edit_token (0010_edit_token.sql) is the real secret
+   now: never rendered anywhere public, only ever handed back to the
+   agent's own browser, in the /edit/<id>?t=<token> URL.
+
+   A row that already has an edit_token accepts *only* the token from here
+   on — the phone check must not stay as a fallback for it, or the hole
+   above just reopens. A legacy row (edit_token still null, created before
+   this migration) falls back to the old phone check same as always, and —
+   the moment that succeeds — gets a token minted and returned right here,
+   so it never has to rely on the public phone number again. See
+   handleCreateListing below for the second half: the actual update is
+   *also* rejected unless the same proof still matches, so this isn't just
+   a UI-only gate. */
 function handleListingEditAuth(req, res, id) {
   readJsonBody(req, 500, function (err, body) {
     (async function () {
       const row = await getListingRow(id);
       if (!row) { sendJson(res, 404, { error: 'not found' }); return; }
+
+      if (row.edit_token) {
+        const submitted = !err && body && typeof body.token === 'string' ? body.token : '';
+        const ok = submitted.length > 0 && submitted === row.edit_token;
+        sendJson(res, ok ? 200 : 403, { ok: ok });
+        return;
+      }
+
       const candidate = normalizePhone(!err && body ? body.phone : '');
       let ok = candidate.length === 10;
       if (ok && timeweb.configured() && row.agent_id) {
@@ -318,7 +341,13 @@ function handleListingEditAuth(req, res, id) {
       } else if (ok) {
         ok = candidate === normalizePhone(row.agent_phone);
       }
-      sendJson(res, ok ? 200 : 403, { ok: ok });
+      if (!ok) { sendJson(res, 403, { ok: false }); return; }
+
+      const token = crypto.randomBytes(16).toString('hex');
+      await supabaseRest('/listings?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ edit_token: token }),
+      });
+      sendJson(res, 200, { ok: true, token: token });
     })().catch(function (e) {
       console.error('listing-edit-auth failed:', e);
       sendJson(res, 500, { error: 'edit-auth failed' });
@@ -516,6 +545,10 @@ function handleCreateListing(req, res) {
     // configured at all, in which case row.agent_phone below is written
     // exactly as before.
     let agentId = null;
+    // Set only when this call is what creates the listing — see the
+    // !isUpdate block below. Returned to the client so it can build this
+    // listing's real /edit/<id>?t=<token> link (see 0010_edit_token.sql).
+    let editToken = null;
     if (isUpdate) {
       existing = await getListingRow(id);
       if (!existing) {
@@ -527,11 +560,15 @@ function handleCreateListing(req, res) {
       // handleListingEditAuth above for the client-facing half of this.
       // Without it, anyone who knows a listing's id (e.g. from its own
       // /p/<id> link) could POST arbitrary changes to it with any phone
-      // number in the body; the finalize/credit checks below only ever
-      // asked "does *this* phone have credits", never "is this actually
-      // the same phone that created the listing".
+      // number (or, once a real edit_token exists, any token guess) in the
+      // body. A row with an edit_token accepts only that token — agentPhone
+      // is just a content field for it from here on, resolved into agentId
+      // below like normal; the phone/Timeweb checks are legacy-row-only,
+      // same reasoning as handleListingEditAuth above.
       let ok;
-      if (timeweb.configured() && existing.agent_id) {
+      if (existing.edit_token) {
+        ok = typeof listing.editToken === 'string' && listing.editToken.length > 0 && listing.editToken === existing.edit_token;
+      } else if (timeweb.configured() && existing.agent_id) {
         const submittedAgentId = await twFindAgentIdByPhone(normalizePhone(listing.agentPhone));
         ok = submittedAgentId !== null && submittedAgentId === existing.agent_id;
         if (ok) agentId = submittedAgentId;
@@ -689,10 +726,21 @@ function handleCreateListing(req, res) {
         photos,
       };
       if (!isUpdate) {
-        // Everything is free — no payment/tier/expiry to track.
+        // Everything is free — no payment/tier to track. Presentations
+        // still expire 30 days after creation (see
+        // supabase/migrations/0003_listing_expiry.sql, wired up in
+        // handlePublicListingView) — fixed at creation like language
+        // below, so editing a listing never extends it; only a fresh one
+        // gets a fresh 30 days.
         row.is_paid = false;
         row.paid_tier = 0;
-        row.expires_at = null;
+        row.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        // Secret proof-of-ownership for this listing's own /edit/<id> link
+        // — see 0010_edit_token.sql and handleListingEditAuth above for why
+        // this replaced agent_phone (public — printed on the presentation
+        // itself) as the thing that gates editing.
+        editToken = crypto.randomBytes(16).toString('hex');
+        row.edit_token = editToken;
         // Fixed once, here, at creation — see 0005_language_and_edit_lockdown.sql.
         // Left out of an update's PATCH body entirely (same reasoning as
         // is_paid/paid_tier above) so re-submitting the form in whatever
@@ -720,9 +768,12 @@ function handleCreateListing(req, res) {
 
       // Reaching this point always means the listing is (now) editable —
       // handleCreateListing only ever gets here when it wasn't finalized,
-      // or when reopening it (above) just cleared that flag.
+      // or when reopening it (above) just cleared that flag. editToken is
+      // only ever set on a fresh create (js/app.js folds it into the
+      // /edit/<id>?t=<token> URL it replaces the address bar with) — an
+      // update never needs it back, its /edit/<id> link already has it.
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ id: id, isFinalized: false }));
+      res.end(JSON.stringify({ id: id, isFinalized: false, editToken: editToken || undefined }));
     } catch (e) {
       console.error('create-listing failed:', e);
       res.writeHead(500, { 'Content-Type': 'application/json' });

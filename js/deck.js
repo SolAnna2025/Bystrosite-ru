@@ -490,6 +490,7 @@ window.BSDeck = (function () {
             (agentName ? '<span class="cb-name">' + esc(agentName) + '</span>' : '') +
             (agentPhone ? '<span class="cb-phone">' + esc(agentPhone) + '</span>' : '') +
             (msgPillsHtml ? '<div class="cb-messengers">' + msgPillsHtml + '</div>' : '') +
+            '<span class="cb-validity">' + esc(t('deckValidityNote')) + '</span>' +
           '</div>' +
           (qrsHtml ? '<div class="cb-qrs">' + qrsHtml + '</div>' : '') +
         '</div>',
