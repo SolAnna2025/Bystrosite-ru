@@ -55,6 +55,8 @@ window.BSI18n = (function () {
       fCoordsPasteHint: 'В Яндекс.Картах: щёлкните правой кнопкой по нужной точке на карте → «Что здесь» → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами',
       fLatLabel: 'Широта (lat)',
       fLngLabel: 'Долгота (lng)',
+      fCountryLabel: 'Страна объекта',
+      fCountryPh: 'напр. Россия, Таиланд, ОАЭ',
 
       secPriceTitle: 'Цена',
       secPriceHint: 'Укажите продажу, аренду или оба варианта — хотя бы одно поле обязательно',
@@ -156,8 +158,12 @@ window.BSI18n = (function () {
       fConsentPolicyLink: 'политикой обработки персональных данных',
       fConsentHint: 'Чтобы поставить галочку, откройте и дочитайте политику до конца',
       fConsentError: 'Чтобы продолжить, подтвердите согласие с политикой обработки персональных данных',
+      fDataConsentLabel: 'Я даю согласие на обработку своих персональных данных',
+      fDataConsentHint: 'Станет доступно после согласия с политикой выше',
+      fDataConsentError: 'Чтобы продолжить, подтвердите согласие на обработку персональных данных',
       footerCopyright: '© Быстросайт. Все права защищены.',
       footerPrivacyLink: 'Политика обработки персональных данных',
+      footerOfertaLink: 'Публичная оферта',
       footerLegalInfo: 'ПРОФБРОКЕР · Быстросайт.РУ',
       policyModalHint: 'Долистайте текст до конца, чтобы согласиться',
       policyModalHintRead: 'Прочитано — теперь можно поставить галочку',
@@ -246,6 +252,7 @@ window.BSI18n = (function () {
 
       deckLocationLabel: 'Локация', deckMapTitle: 'Карта расположения',
       deckRouteLink: 'Открыть маршрут в Яндекс.Картах →',
+      deckRouteLinkGoogle: 'Открыть маршрут в Google Картах →',
 
       deckConditionsLabel: 'Условия', deckSale: 'Продажа', deckRent: 'Аренда',
       deckMonthly: 'Ежемесячно', deckMarketRentPrefix: 'Аренда на годовой контракт в этом районе — ориентировочно',
@@ -332,6 +339,37 @@ window.BSI18n = (function () {
 
       policyTelegramHandle: '@proff_broker',
       policyBackBtn: '← Назад к форме',
+
+      /* payment-consent.html has no English version either, same reasoning
+         as privacy.html above — see the note next to the English dict's
+         own pconsent-prefixed comment for how the fallback works. */
+      pconsentPageTitle: 'Согласие на обработку персональных данных — Быстросайт',
+      pconsentH1: 'Согласие на обработку персональных данных и передачу третьим лицам',
+      pconsentP1: 'Я свободно, своей волей и в своём интересе даю согласие ООО «ПРОДАМУС» (424020, Республика Марий Эл, г. Йошкар-Ола, ул. Анциферова, д. 27 «А», пом. 29) (далее — «Оператор») на обработку моих персональных данных (далее — «Согласие») в целях обработки и подтверждения оплаты услуг сервиса «Быстросайт» через платёжный сервис Оператора, идентификации плательщика и информирования об исполнении платежа.',
+      pconsentP2: 'Оператор вправе осуществлять сбор, запись, систематизацию, накопление, хранение, уточнение (обновление, изменение), извлечение, использование, передачу (доступ, предоставление), блокирование, удаление, уничтожение персональных данных. Обработка может осуществляться как с использованием средств автоматизации, так и без них.',
+
+      pconsentSec2Title: 'Перечень персональных данных, на обработку которых я даю согласие',
+      pconsentSec2Intro: 'Я даю согласие на обработку следующих персональных данных:',
+      pconsentSec2Li1: 'фамилия, имя, отчество;',
+      pconsentSec2Li2: 'контактные данные (номер телефона и адрес электронной почты);',
+      pconsentSec2Li4: 'сведения о примерном местоположении, определяемом по техническим данным, если такие сведения используются Оператором.',
+
+      pconsentSec3Title: 'Передача третьим лицам',
+      pconsentSec3P1: 'Я даю Оператору право привлекать третьих лиц к обработке моих данных путём поручения обработки или передачи без поручения исключительно для достижения указанной цели и в минимально необходимом составе, при условии обеспечения ими конфиденциальности и безопасности. К таким третьим лицам относятся:',
+      pconsentSec3Li1: 'ООО «Яндекс.Облако» (119021, г. Москва, ул. Льва Толстого, д. 16, пом. 528);',
+      pconsentSec3Li5Prefix: 'а также третьи лица, указанные в «Перечне третьих лиц, привлечённых к обработке ПДн» (',
+      pconsentThirdPartyListLink: 'prodamus.ru/privacy-tretilica',
+      pconsentSec3Li5Mid: '), являющемся неотъемлемой частью настоящего Согласия и Политики конфиденциальности ООО «Продамус» (',
+      pconsentPrivacyPolicyLink: 'prodamus.ru/privacy',
+      pconsentSec3Li5Suffix: ').',
+
+      pconsentSec4Title: 'Срок действия',
+      pconsentSec4P1: 'Согласие действует с момента его предоставления до достижения целей обработки либо отзыва Согласия — в зависимости от того, какое событие наступит раньше.',
+
+      pconsentSec5Title: 'Порядок отзыва',
+      pconsentSec5P1Prefix: 'Согласие может быть отозвано путём направления письменного обращения на электронную почту ',
+      pconsentEmail: 'complaints@prodamus.ru',
+      pconsentSec5P1Suffix: ' или письмом по адресу Оператора. В случае отзыва Согласия Оператор и третьи лица обязаны прекратить обработку и уничтожить данные, за исключением случаев, когда сохранение данных требуется согласно п. 2–11 ч. 1 ст. 6, ч. 2 ст. 10 и ч. 2 ст. 11 Федерального закона от 27.07.2006 № 152-ФЗ «О персональных данных».',
     },
     en: {
       appBrandName: 'Bystrosite',
@@ -377,6 +415,8 @@ window.BSI18n = (function () {
       fCoordsPasteHint: 'In Yandex Maps: right-click the point on the map → "What\'s here" → copy the coordinates that appear and paste them here, the fields below fill in automatically',
       fLatLabel: 'Latitude (lat)',
       fLngLabel: 'Longitude (lng)',
+      fCountryLabel: 'Property country',
+      fCountryPh: 'e.g. Russia, Thailand, UAE',
 
       secPriceTitle: 'Price',
       secPriceHint: 'Specify sale, rent, or both — at least one is required',
@@ -478,8 +518,12 @@ window.BSI18n = (function () {
       fConsentPolicyLink: 'Privacy Policy',
       fConsentHint: 'Open and read the policy all the way through to enable the checkbox',
       fConsentError: 'Please confirm you agree to the privacy policy to continue',
+      fDataConsentLabel: 'I consent to the processing of my personal data',
+      fDataConsentHint: 'Unlocks once you agree to the policy above',
+      fDataConsentError: 'Please confirm you consent to the processing of your personal data to continue',
       footerCopyright: '© Bystrosite. All rights reserved.',
       footerPrivacyLink: 'Privacy Policy',
+      footerOfertaLink: 'Public Offer',
       footerLegalInfo: 'PROFBROKER · Bystrosite.RU',
       policyModalHint: 'Scroll to the end of the text to agree',
       policyModalHintRead: 'Read — you can now check the box',
@@ -568,6 +612,7 @@ window.BSI18n = (function () {
 
       deckLocationLabel: 'Location', deckMapTitle: 'Location map',
       deckRouteLink: 'Open route in Yandex Maps →',
+      deckRouteLinkGoogle: 'Open route in Google Maps →',
 
       deckConditionsLabel: 'Terms', deckSale: 'Sale', deckRent: 'Rent',
       deckMonthly: 'Monthly', deckMarketRentPrefix: 'Yearly-contract rent in this area — approximately',
@@ -589,11 +634,14 @@ window.BSI18n = (function () {
 
       slideAnnounce: 'Slide {n} of {total}: {label}',
 
-      /* privacy.html has no English version — it's a Russian legal document
-         (152-ФЗ), and translating "самозанятая"/ИНН/152-ФЗ citations would
-         be inaccurate, not helpful. It has no RU/EN switch; t() falls back
-         to the RU strings above for any policy-prefixed key if ever read
-         with lang 'en'. */
+      /* privacy.html and payment-consent.html have no English version —
+         both are Russian legal documents (152-ФЗ), and translating
+         "самозанятая"/ИНН/152-ФЗ citations would be inaccurate, not helpful
+         (oferta.html skips a lang switch for the same reason, though it has
+         no data-i18n attributes at all so it needs no dict entries here).
+         Neither page has an RU/EN switch; t() falls back to the RU strings
+         above for any policy- or pconsent-prefixed key if ever read with
+         lang 'en'. */
     },
   };
 

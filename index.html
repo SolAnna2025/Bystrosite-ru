@@ -226,6 +226,25 @@
               <input type="number" id="fLng" step="any" placeholder="39.8944">
             </div>
           </div>
+          <div class="field-row">
+            <div class="field span-2">
+              <div class="field-label-row">
+                <label for="fCountry" data-i18n="fCountryLabel">Страна объекта</label>
+                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
+              </div>
+              <input type="text" id="fCountry" list="fCountryList" placeholder="напр. Россия, Таиланд, ОАЭ" data-i18n-placeholder="fCountryPh">
+              <datalist id="fCountryList">
+                <option value="Россия">
+                <option value="Таиланд">
+                <option value="ОАЭ">
+                <option value="Турция">
+                <option value="Кипр">
+                <option value="Черногория">
+                <option value="Испания">
+                <option value="Грузия">
+              </datalist>
+            </div>
+          </div>
         </section>
 
         <section class="field-group">
@@ -236,6 +255,9 @@
               <label for="fCurrency" data-i18n="fCurrencyLabel">Валюта</label>
               <select id="fCurrency">
                 <option value="RUB" selected>₽ RUB</option>
+                <option value="THB">THB</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
               </select>
             </div>
             <div class="field">
@@ -549,6 +571,15 @@
           <span class="field-inline-error" id="fConsentError" data-i18n="fConsentError">Чтобы продолжить, подтвердите согласие с политикой обработки персональных данных</span>
         </div>
 
+        <div class="field field-checkbox consent-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="fDataConsent" disabled>
+            <span data-i18n="fDataConsentLabel">Я даю согласие на обработку своих персональных данных</span>
+          </label>
+          <span class="field-note" id="fDataConsentHint" data-i18n="fDataConsentHint">Станет доступно после согласия с политикой выше</span>
+          <span class="field-inline-error" id="fDataConsentError" data-i18n="fDataConsentError">Чтобы продолжить, подтвердите согласие на обработку персональных данных</span>
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" id="submitBtn" data-i18n="submitBtn">Создать презентацию →</button>
         </div>
@@ -629,9 +660,11 @@
   </div>
 
   <!-- ===================== Privacy policy "read to the end" modal ===================== -->
-  <!-- The consent checkbox (fConsent, "Об объекте" form → consent-row) stays
-       disabled until this has been scrolled to its end at least once — see
-       wirePolicyModal() in js/app.js. Loads privacy.html itself in an iframe
+  <!-- The policy-agreement checkbox (fConsent, "Об объекте" form →
+       consent-row) stays disabled until this has been scrolled to its end
+       at least once — see wireReadToEndConsent() in js/app.js. The second
+       checkbox (fDataConsent, the actual PDPA processing consent) only
+       unlocks once fConsent is checked. Loads privacy.html itself in an iframe
        (same origin, so its scroll position is readable) rather than
        duplicating the policy text here, so there's exactly one copy of it. -->
   <div class="modal-overlay" id="policyModal" hidden>

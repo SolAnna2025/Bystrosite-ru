@@ -83,6 +83,7 @@ window.BS = window.BS || {};
     locationName: 'Хоста, Сочи, Краснодарский край',
     lat: 43.5397,
     lng: 39.8944,
+    country: 'Россия',
     currency: 'RUB',
     salePrice: 12500000,
     rentPrice: 95000,
@@ -180,6 +181,7 @@ window.BS = window.BS || {};
       locationName: row.location_name,
       lat: row.lat,
       lng: row.lng,
+      country: row.country,
       currency: row.currency,
       salePrice: row.sale_price,
       rentPrice: row.rent_price,
@@ -1138,6 +1140,7 @@ window.BS = window.BS || {};
     document.getElementById('fLocationName').value = listing.locationName || '';
     document.getElementById('fLat').value = listing.lat != null ? listing.lat : '';
     document.getElementById('fLng').value = listing.lng != null ? listing.lng : '';
+    document.getElementById('fCountry').value = listing.country || '';
     document.getElementById('fCurrency').value = listing.currency || 'RUB';
     document.getElementById('fSalePrice').value = listing.salePrice != null ? listing.salePrice : '';
     document.getElementById('fRentPrice').value = listing.rentPrice != null ? listing.rentPrice : '';
@@ -1292,6 +1295,24 @@ window.BS = window.BS || {};
     policyModalEl.hidden = true;
   });
 
+  /* Second checkbox: the actual PDPA processing consent, kept separate from
+     the policy-agreement checkbox above per the site owner's request. Stays
+     disabled (and gets unchecked) until fConsent is checked — agreeing to
+     the policy is a precondition for the processing consent to mean
+     anything, so it can't be ticked out of order. */
+  var fDataConsentEl = document.getElementById('fDataConsent');
+  var fDataConsentError = document.getElementById('fDataConsentError');
+  function syncDataConsentAvailability() {
+    var unlocked = fConsentEl.checked;
+    fDataConsentEl.disabled = !unlocked;
+    if (!unlocked) fDataConsentEl.checked = false;
+  }
+  fConsentEl.addEventListener('change', syncDataConsentAvailability);
+  syncDataConsentAvailability();
+  fDataConsentEl.addEventListener('change', function () {
+    fDataConsentError.classList.remove('visible');
+  });
+
   function val(id) { return document.getElementById(id).value.trim(); }
   function num(id) { var v = val(id); return v === '' ? null : Number(v); }
   function bool(id) { return document.getElementById(id).checked; }
@@ -1341,8 +1362,10 @@ window.BS = window.BS || {};
 
     var consentMissing = !fConsentEl.checked;
     fConsentError.classList.toggle('visible', consentMissing);
+    var dataConsentMissing = !fDataConsentEl.checked;
+    fDataConsentError.classList.toggle('visible', dataConsentMissing);
 
-    if (state.missing.length || state.missingPrice || consentMissing) {
+    if (state.missing.length || state.missingPrice || consentMissing || dataConsentMissing) {
       formError.classList.add('visible');
       formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
@@ -1382,6 +1405,7 @@ window.BS = window.BS || {};
       locationName: val('fLocationName'),
       lat: num('fLat'),
       lng: num('fLng'),
+      country: val('fCountry'),
       currency: val('fCurrency'),
       salePrice: salePrice,
       rentPrice: rentPrice,

@@ -343,17 +343,35 @@ window.BSDeck = (function () {
     };
   }
 
+  /* Kept in sync by hand with isRussiaCountry() in server.js — small enough
+     not to warrant sharing a module between browser and server code here.
+     Empty/unset country defaults to Russia, matching this site's original
+     Yandex-only behavior from before the country field existed. */
+  function isRussiaCountry(country) {
+    var c = String(country || '').trim().toLowerCase();
+    return c === '' || c.indexOf('росси') !== -1 || c === 'russia' || c === 'ru';
+  }
+
   function slideLocation(l, nearby, n) {
-    /* Yandex Maps, not Google/OSM — the target audience is Russian agents
-       and their clients, for whom Yandex is the map people actually open
-       and trust. The "map-widget" embed is Yandex's documented, no-API-key
-       iframe made for exactly this (a single point on a map), same idea as
-       Google's or OSM's embed. Note the coordinate order: Yandex's ll/pt
-       URL params take longitude,latitude (reverse of lat/lng as stored
-       everywhere else in this file) — a GIS (x,y) convention, unlike the
-       lat,lon order Yandex uses when it shows coordinates to a human. */
-    var mapSrc = 'https://yandex.ru/map-widget/v1/?ll=' + l.lng + ',' + l.lat + '&z=16&l=map&pt=' + l.lng + ',' + l.lat + ',pm2rdm';
-    var routeUrl = 'https://yandex.ru/maps/?rtext=~' + l.lat + ',' + l.lng + '&rtt=auto';
+    /* Yandex Maps for Russian listings (the default audience) — the
+       "map-widget" embed is Yandex's documented, no-API-key iframe made for
+       exactly this (a single point on a map). Note the coordinate order:
+       Yandex's ll/pt URL params take longitude,latitude (reverse of lat/lng
+       as stored everywhere else in this file) — a GIS (x,y) convention,
+       unlike the lat,lon order Yandex uses when it shows coordinates to a
+       human.
+       Google Maps for anything else — Yandex's coverage/search quality
+       outside Russia/CIS isn't something to put in front of a client
+       abroad. Google's own no-API-key "output=embed" iframe is the direct
+       equivalent, lat,lng order this time. */
+    var isRu = isRussiaCountry(l.country);
+    var mapSrc = isRu
+      ? 'https://yandex.ru/map-widget/v1/?ll=' + l.lng + ',' + l.lat + '&z=16&l=map&pt=' + l.lng + ',' + l.lat + ',pm2rdm'
+      : 'https://www.google.com/maps?q=' + l.lat + ',' + l.lng + '&z=16&output=embed';
+    var routeUrl = isRu
+      ? 'https://yandex.ru/maps/?rtext=~' + l.lat + ',' + l.lng + '&rtt=auto'
+      : 'https://www.google.com/maps/dir/?api=1&destination=' + l.lat + ',' + l.lng;
+    var routeLabel = isRu ? t('deckRouteLink') : t('deckRouteLinkGoogle');
     var rows = nearby.map(function (p) {
       return '<div class="loc-nearby-row"><span class="lnr-name">' + esc(p.name) + '</span>' + (p.dist ? '<span class="lnr-dist">' + esc(p.dist) + '</span>' : '') + '</div>';
     }).join('');
@@ -363,7 +381,7 @@ window.BSDeck = (function () {
       html:
         /* data-src, not src: inactive slides are hidden via display:none, which
            collapses an iframe's layout box to 0×0 — if the map loaded eagerly
-           here, Yandex's embedded map would measure that 0×0 size at init and
+           here, the embedded map would measure that 0×0 size at init and
            never recover (no way to reach into a cross-origin iframe and call
            invalidateSize()). showSlide()/flipTo() below promote data-src to a
            real src only once this slide is about to become visible, so the
@@ -374,7 +392,7 @@ window.BSDeck = (function () {
           '<h2 class="ed-title ed-title-md ed-title-2l" style="margin-top:10px">' + esc(l.locationName) + '</h2>' +
           '<div class="loc-coords">' + esc(String(l.lat)) + ', ' + esc(String(l.lng)) + '</div>' +
           (rows ? '<div class="loc-nearby-list">' + rows + '</div>' : '') +
-          '<a class="loc-route" href="' + esc(routeUrl) + '" target="_blank" rel="noopener">' + esc(t('deckRouteLink')) + '</a>' +
+          '<a class="loc-route" href="' + esc(routeUrl) + '" target="_blank" rel="noopener">' + esc(routeLabel) + '</a>' +
         '</div>',
     };
   }
@@ -632,7 +650,7 @@ window.BSDeck = (function () {
      any lull. 20s costs nothing extra when the map loads quickly (the
      promise still resolves the moment it does) and gives a cold start
      enough room to actually finish. */
-  function loadStaticMapImage(lat, lng) {
+  function loadStaticMapImage(lat, lng, country) {
     return new Promise(function (resolve) {
       var img = new Image();
       var settled = false;
@@ -645,7 +663,11 @@ window.BSDeck = (function () {
       }
       img.onload = function () { settle(img); };
       img.onerror = function () { settle(null); };
-      img.src = '/api/static-map?lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng);
+      // country picks the provider order server-side (Yandex-first for
+      // Russia/unset, Google-first otherwise) — see isRussiaCountry() in
+      // server.js and the matching live-map choice in slideLocation above.
+      img.src = '/api/static-map?lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng)
+        + (country ? '&country=' + encodeURIComponent(country) : '');
     });
   }
 
@@ -721,7 +743,8 @@ window.BSDeck = (function () {
       var frame = mapEl.querySelector('iframe');
       if (frame) frame.style.visibility = 'hidden';
       var lat = currentListing && currentListing.lat, lng = currentListing && currentListing.lng;
-      mapReady = (lat != null && lng != null ? loadStaticMapImage(lat, lng) : Promise.resolve(null)).then(function (img) {
+      var country = currentListing && currentListing.country;
+      mapReady = (lat != null && lng != null ? loadStaticMapImage(lat, lng, country) : Promise.resolve(null)).then(function (img) {
         if (img) {
           img.className = 'loc-map-pdf-img';
           img.alt = '';

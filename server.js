@@ -112,6 +112,48 @@ function pipeMapImage(res, mapUrl) {
   });
 }
 
+// Matches the same "is this listing in Russia" test as isRussiaCountry() in
+// js/deck.js (kept in sync by hand — small enough not to warrant sharing a
+// module between server and browser code here). Empty/unset defaults to
+// Russia, same as the rest of the site's Yandex-first behavior predates a
+// country field at all.
+function isRussiaCountry(country) {
+  const c = String(country || '').trim().toLowerCase();
+  return c === '' || c.indexOf('росси') !== -1 || c === 'russia' || c === 'ru';
+}
+
+function yandexStaticMapUrl(lat, lng) {
+  if (!YANDEX_STATIC_MAPS_API_KEY) return null;
+  // Yandex's ll/pt params take lon,lat (reverse of how lat/lng are stored
+  // everywhere else in this file) — see the same note in js/deck.js
+  // slideLocation. 650x450 is the API's max size, so no scale=2 equivalent
+  // is available here.
+  return 'https://static-maps.yandex.ru/1.x/'
+    + '?ll=' + lng + ',' + lat
+    + '&z=15&l=map&size=650,450'
+    + '&pt=' + lng + ',' + lat + ',pm2rdl'
+    + '&apikey=' + encodeURIComponent(YANDEX_STATIC_MAPS_API_KEY);
+}
+
+function geoapifyStaticMapUrl(lat, lng) {
+  if (!GEOAPIFY_API_KEY) return null;
+  return 'https://maps.geoapify.com/v1/staticmap'
+    + '?style=osm-carto&width=640&height=640'
+    + '&center=lonlat:' + lng + ',' + lat
+    + '&zoom=15'
+    + '&marker=lonlat:' + lng + ',' + lat + ';color:%232c2a22;size:large'
+    + '&apiKey=' + encodeURIComponent(GEOAPIFY_API_KEY);
+}
+
+function googleStaticMapUrl(lat, lng) {
+  if (!GOOGLE_MAPS_API_KEY) return null;
+  return 'https://maps.googleapis.com/maps/api/staticmap'
+    + '?center=' + lat + ',' + lng
+    + '&zoom=15&size=640x640&scale=2&maptype=roadmap'
+    + '&markers=color:0x2c2a22%7C' + lat + ',' + lng
+    + '&key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY);
+}
+
 function handleStaticMap(req, res) {
   const query = new URL(req.url, 'http://localhost').searchParams;
   const lat = Number(query.get('lat'));
@@ -119,37 +161,17 @@ function handleStaticMap(req, res) {
   const valid = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
   if (!valid) { res.writeHead(404); res.end(); return; }
 
-  if (YANDEX_STATIC_MAPS_API_KEY) {
-    // Yandex's ll/pt params take lon,lat (reverse of how lat/lng are
-    // stored everywhere else in this file) — see the same note in
-    // js/deck.js slideLocation. 650x450 is the API's max size, so no
-    // scale=2 equivalent is available here.
-    pipeMapImage(res, 'https://static-maps.yandex.ru/1.x/'
-      + '?ll=' + lng + ',' + lat
-      + '&z=15&l=map&size=650,450'
-      + '&pt=' + lng + ',' + lat + ',pm2rdl'
-      + '&apikey=' + encodeURIComponent(YANDEX_STATIC_MAPS_API_KEY));
-    return;
-  }
-
-  if (GEOAPIFY_API_KEY) {
-    pipeMapImage(res, 'https://maps.geoapify.com/v1/staticmap'
-      + '?style=osm-carto&width=640&height=640'
-      + '&center=lonlat:' + lng + ',' + lat
-      + '&zoom=15'
-      + '&marker=lonlat:' + lng + ',' + lat + ';color:%232c2a22;size:large'
-      + '&apiKey=' + encodeURIComponent(GEOAPIFY_API_KEY));
-    return;
-  }
-
-  if (GOOGLE_MAPS_API_KEY) {
-    pipeMapImage(res, 'https://maps.googleapis.com/maps/api/staticmap'
-      + '?center=' + lat + ',' + lng
-      + '&zoom=15&size=640x640&scale=2&maptype=roadmap'
-      + '&markers=color:0x2c2a22%7C' + lat + ',' + lng
-      + '&key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY));
-    return;
-  }
+  // Russia (or no country on file, same as before this field existed):
+  // Yandex first, matching the live map. Anywhere else: Google first —
+  // Yandex's map coverage outside Russia/CIS is too sparse to be worth
+  // trying before it. Geoapify (OSM-based, worldwide) sits in the middle
+  // either way as the key-free-signup fallback.
+  const country = query.get('country');
+  const candidates = isRussiaCountry(country)
+    ? [yandexStaticMapUrl(lat, lng), geoapifyStaticMapUrl(lat, lng), googleStaticMapUrl(lat, lng)]
+    : [googleStaticMapUrl(lat, lng), geoapifyStaticMapUrl(lat, lng), yandexStaticMapUrl(lat, lng)];
+  const mapUrl = candidates.find(function (u) { return u; });
+  if (mapUrl) { pipeMapImage(res, mapUrl); return; }
 
   // No key configured — 404, so the client's img.onerror falls back to
   // the old text-only Location slide instead of a broken image.
@@ -676,6 +698,7 @@ function handleCreateListing(req, res) {
         location_name: listing.locationName,
         lat: listing.lat,
         lng: listing.lng,
+        country: listing.country,
         currency: listing.currency || 'RUB',
         sale_price: listing.salePrice,
         rent_price: listing.rentPrice,
@@ -901,6 +924,8 @@ const server = http.createServer((req, res) => {
   // .view divs), so it needs this explicit rewrite rather than relying on
   // the catch-all "unknown path -> index.html" fallback below.
   if (urlPath === '/privacy') urlPath = '/privacy.html';
+  if (urlPath === '/oferta') urlPath = '/oferta.html';
+  if (urlPath === '/payment-consent') urlPath = '/payment-consent.html';
 
   // Everything this server needs to serve as a plain static file lives
   // under one of these — an *allowlist*, not a denylist, because the
@@ -913,7 +938,7 @@ const server = http.createServer((req, res) => {
   // and these three asset directories are meant to be public; everything
   // else (including future files someone drops in root) falls through to
   // the SPA fallback below, same as any other 404 would.
-  const PUBLIC_ROOT_FILES = new Set(['/index.html', '/privacy.html']);
+  const PUBLIC_ROOT_FILES = new Set(['/index.html', '/privacy.html', '/oferta.html', '/payment-consent.html']);
   const PUBLIC_DIR_PREFIXES = ['/css/', '/js/', '/assets/'];
   const publiclyServable = PUBLIC_ROOT_FILES.has(urlPath) || PUBLIC_DIR_PREFIXES.some(function (p) { return urlPath.indexOf(p) === 0; });
 
