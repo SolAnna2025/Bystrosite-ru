@@ -25,9 +25,11 @@ window.BSI18n = (function () {
       formErrorBanner: 'Проверьте отмеченные поля — часть обязательных данных не заполнена.',
 
       secTypeTitle: 'Тип объекта',
-      secTypeHint: 'Определяет, какие поля характеристик показывать ниже, и нужен ли слайд бассейна/двора',
+      secTypeHint: 'Сначала выберите страну — от неё зависят типы объектов и карта в презентации (Яндекс для России, Google для других стран)',
       fPropertyTypeLabel: 'Тип',
       optApartment: 'Квартира', optHouse: 'Дом', optCottage: 'Коттедж',
+      optHouseCottage: 'Дом / коттедж', optLand: 'Земельный участок', optApartmentRu: 'Квартира / апартаменты',
+      optCondo: 'Кондоминиум', optVilla: 'Вилла',
 
       fieldFlagRequired: 'Обязательное поле',
       fieldFlagOptional: 'Необязательное поле',
@@ -385,9 +387,11 @@ window.BSI18n = (function () {
       formErrorBanner: 'Check the highlighted fields — some required data is missing.',
 
       secTypeTitle: 'Property type',
-      secTypeHint: 'Determines which spec fields show below, and whether the pool/yard slide is needed',
+      secTypeHint: 'Choose the country first — it decides the property types and the map in the presentation (Yandex for Russia, Google elsewhere)',
       fPropertyTypeLabel: 'Type',
       optApartment: 'Apartment', optHouse: 'House', optCottage: 'Cottage',
+      optHouseCottage: 'House / cottage', optLand: 'Land plot', optApartmentRu: 'Apartment',
+      optCondo: 'Condominium', optVilla: 'Villa',
 
       fieldFlagRequired: 'Required field',
       fieldFlagOptional: 'Optional field',

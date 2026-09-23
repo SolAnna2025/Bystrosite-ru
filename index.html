@@ -132,14 +132,30 @@
 
         <section class="field-group">
           <h2 data-i18n="secTypeTitle">Тип объекта</h2>
-          <p class="field-group-hint" data-i18n="secTypeHint">Определяет, какие поля характеристик показывать ниже, и нужен ли слайд бассейна/двора</p>
+          <p class="field-group-hint" data-i18n="secTypeHint">Сначала выберите страну — от неё зависят типы объектов и карта в презентации (Яндекс для России, Google для других стран)</p>
           <div class="field-row">
             <div class="field">
+              <label for="fCountry" data-i18n="fCountryLabel">Страна объекта</label>
+              <input type="text" id="fCountry" list="fCountryList" value="Россия" placeholder="напр. Россия, Таиланд, ОАЭ" data-i18n-placeholder="fCountryPh">
+              <datalist id="fCountryList">
+                <option value="Россия">
+                <option value="Таиланд">
+                <option value="ОАЭ">
+                <option value="Турция">
+                <option value="Кипр">
+                <option value="Черногория">
+                <option value="Испания">
+                <option value="Грузия">
+              </datalist>
+            </div>
+            <div class="field">
               <label for="fPropertyType" data-i18n="fPropertyTypeLabel">Тип</label>
+              <!-- Options depend on fCountry — rebuilt by syncPropertyTypeOptions()
+                   in js/app.js (Russia: дом/участок/квартира; abroad: кондо/вилла). -->
               <select id="fPropertyType">
-                <option value="apartment" data-i18n="optApartment">Квартира</option>
-                <option value="house" data-i18n="optHouse">Дом</option>
-                <option value="cottage" selected data-i18n="optCottage">Коттедж</option>
+                <option value="house" selected data-i18n="optHouseCottage">Дом / коттедж</option>
+                <option value="land" data-i18n="optLand">Земельный участок</option>
+                <option value="apartment" data-i18n="optApartmentRu">Квартира / апартаменты</option>
               </select>
             </div>
           </div>
@@ -226,25 +242,6 @@
               <input type="number" id="fLng" step="any" placeholder="39.8944">
             </div>
           </div>
-          <div class="field-row">
-            <div class="field span-2">
-              <div class="field-label-row">
-                <label for="fCountry" data-i18n="fCountryLabel">Страна объекта</label>
-                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
-              </div>
-              <input type="text" id="fCountry" list="fCountryList" placeholder="напр. Россия, Таиланд, ОАЭ" data-i18n-placeholder="fCountryPh">
-              <datalist id="fCountryList">
-                <option value="Россия">
-                <option value="Таиланд">
-                <option value="ОАЭ">
-                <option value="Турция">
-                <option value="Кипр">
-                <option value="Черногория">
-                <option value="Испания">
-                <option value="Грузия">
-              </datalist>
-            </div>
-          </div>
         </section>
 
         <section class="field-group">
@@ -288,7 +285,7 @@
           <h2 data-i18n="secParamsTitle">Параметры объекта</h2>
           <p class="field-group-hint" data-i18n="secParamsHint">Всё необязательно</p>
           <div class="field-row">
-            <div class="field">
+            <div class="field field-no-land">
               <div class="field-label-row">
                 <label for="fHouseArea" data-i18n="fHouseAreaLabel">Площадь дома, м²</label>
                 <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
@@ -302,21 +299,21 @@
               </div>
               <input type="number" id="fPlotArea" min="0" value="420">
             </div>
-            <div class="field">
+            <div class="field field-no-land">
               <div class="field-label-row">
                 <label for="fBedrooms" data-i18n="fBedroomsLabel">Спальни</label>
                 <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
               </div>
               <input type="number" id="fBedrooms" min="0" value="4">
             </div>
-            <div class="field">
+            <div class="field field-no-land">
               <div class="field-label-row">
                 <label for="fBathrooms" data-i18n="fBathroomsLabel">Ванные</label>
                 <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
               </div>
               <input type="number" id="fBathrooms" min="0" value="3">
             </div>
-            <div class="field field-house">
+            <div class="field field-house field-no-land">
               <div class="field-label-row">
                 <label for="fPoolSize" data-i18n="fPoolSizeLabel">Размер бассейна</label>
                 <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
@@ -330,11 +327,11 @@
           <h2 data-i18n="secFeaturesTitle">Характеристики и удобства</h2>
           <p class="field-group-hint" data-i18n="secFeaturesHint">Всё необязательно — появится на слайде «Пространство для жизни», если заполнено. Набор полей зависит от типа объекта</p>
           <div class="field-row">
-            <div class="field field-house">
+            <div class="field field-house field-no-land">
               <label for="fYard" data-i18n="fYardLabel">Двор</label>
               <input type="text" id="fYard" placeholder="напр. огороженный, с газоном" data-i18n-placeholder="fYardPh">
             </div>
-            <div class="field field-house">
+            <div class="field field-house field-no-land">
               <label for="fFloors" data-i18n="fFloorsLabel">Этажность</label>
               <input type="number" id="fFloors" min="0" value="2">
             </div>
@@ -342,7 +339,7 @@
               <label for="fFloorNumber" data-i18n="fFloorNumberLabel">Этаж</label>
               <input type="number" id="fFloorNumber" min="0" value="5">
             </div>
-            <div class="field">
+            <div class="field field-no-land">
               <label for="fFurnished" data-i18n="fFurnishedLabel">Мебель</label>
               <select id="fFurnished">
                 <option value="" data-i18n="optFurnishedNone">Не указано</option>
@@ -351,7 +348,7 @@
                 <option value="none" data-i18n="optFurnishedEmpty">Без мебели</option>
               </select>
             </div>
-            <div class="field field-house">
+            <div class="field field-house field-no-land">
               <label for="fGarageSpaces" data-i18n="fGarageSpacesLabel">Гараж, машиномест</label>
               <input type="number" id="fGarageSpaces" min="0" value="2">
             </div>
@@ -360,7 +357,7 @@
             <div class="field field-checkbox">
               <label class="checkbox-label"><input type="checkbox" id="fSecurity" checked> <span data-i18n="fSecurityLabel">Круглосуточная охрана</span></label>
             </div>
-            <div class="field field-checkbox field-house">
+            <div class="field field-checkbox field-house field-no-land">
               <label class="checkbox-label"><input type="checkbox" id="fAutoGate" checked> <span data-i18n="fAutoGateLabel">Автоматические ворота</span></label>
             </div>
           </div>

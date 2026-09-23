@@ -118,8 +118,10 @@ function pipeMapImage(res, mapUrl) {
 // Russia, same as the rest of the site's Yandex-first behavior predates a
 // country field at all.
 function isRussiaCountry(country) {
-  const c = String(country || '').trim().toLowerCase();
-  return c === '' || c.indexOf('росси') !== -1 || c === 'russia' || c === 'ru';
+  // Dots/spaces stripped so 'РФ', 'Р.Ф.', 'Russian Federation' all match.
+  const c = String(country || '').toLowerCase().replace(/[\s.]/g, '');
+  return c === '' || c.indexOf('росси') !== -1 || c.indexOf('russia') !== -1 || c.indexOf('rossi') !== -1
+    || c === 'рф' || c === 'rf' || c === 'ru' || c === 'rus';
 }
 
 function yandexStaticMapUrl(lat, lng) {
@@ -689,7 +691,7 @@ function handleCreateListing(req, res) {
 
       const row = {
         id,
-        property_type: listing.propertyType || 'cottage',
+        property_type: listing.propertyType || 'house',
         floor_number: listing.floorNumber,
         title: listing.title,
         description: listing.description,

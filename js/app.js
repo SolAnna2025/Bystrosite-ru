@@ -74,7 +74,7 @@ window.BS = window.BS || {};
   // pre-filled defaults, kept as one fixed object so the landing page can
   // render its 12 thumbnails without needing the form ever touched.
   BS.exampleListing = {
-    propertyType: 'cottage',
+    propertyType: 'house',
     floorNumber: null,
     title: 'Коттедж «Аврора»',
     description: 'Одноэтажный коттедж с приватным бассейном в закрытом посёлке в 7 минутах от моря в Сочи. Полностью меблирован, панорамное остекление гостиной, средиземноморский сад по периметру участка.',
@@ -938,11 +938,60 @@ window.BS = window.BS || {};
      instead. */
 
   var fPropertyTypeEl = document.getElementById('fPropertyType');
+  var fCountryEl = document.getElementById('fCountry');
+
+  /* The type list depends on the country chosen right before it: Russian
+     listings get дом/коттедж, земельный участок, квартира/апартаменты;
+     anywhere else gets кондоминиум, вилла. On a switch between the two
+     sets the closest equivalent is kept selected (condo <-> apartment,
+     villa <-> house). Legacy 'cottage' rows show as 'house'. */
+  var TYPE_OPTIONS_RU = [['house', 'optHouseCottage'], ['land', 'optLand'], ['apartment', 'optApartmentRu']];
+  var TYPE_OPTIONS_ABROAD = [['condo', 'optCondo'], ['villa', 'optVilla']];
+  var TYPE_EQUIVALENT = { condo: 'apartment', apartment: 'condo', villa: 'house', house: 'villa', cottage: 'house', land: 'villa' };
+
+  function syncPropertyTypeOptions(wanted) {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    var isRu = window.BSDeck.isRussiaCountry(fCountryEl.value);
+    var opts = isRu ? TYPE_OPTIONS_RU : TYPE_OPTIONS_ABROAD;
+    var current = wanted || fPropertyTypeEl.value;
+    var values = opts.map(function (o) { return o[0]; });
+    var next = values.indexOf(current) !== -1 ? current
+      : values.indexOf(TYPE_EQUIVALENT[current]) !== -1 ? TYPE_EQUIVALENT[current]
+      : values[0];
+    var sameSet = Array.prototype.map.call(fPropertyTypeEl.options, function (o) { return o.value; }).join() === values.join();
+    if (!sameSet) {
+      fPropertyTypeEl.innerHTML = '';
+      opts.forEach(function (o) {
+        var opt = document.createElement('option');
+        opt.value = o[0];
+        opt.setAttribute('data-i18n', o[1]);
+        opt.textContent = t(o[1]);
+        fPropertyTypeEl.appendChild(opt);
+      });
+    }
+    var changed = fPropertyTypeEl.value !== next || !sameSet;
+    fPropertyTypeEl.value = next;
+    return changed;
+  }
 
   function applyPropertyType() {
-    var isApartment = fPropertyTypeEl.value === 'apartment';
+    var type = fPropertyTypeEl.value;
+    var isApartment = window.BSDeck.isApartmentLike(type);
+    var isLand = type === 'land';
     Array.prototype.forEach.call(document.querySelectorAll('.field-house'), function (el) { el.hidden = isApartment; });
     Array.prototype.forEach.call(document.querySelectorAll('.field-apartment'), function (el) { el.hidden = !isApartment; });
+    // A plot of land has no house on it: hide (and clear) everything about
+    // rooms/building, keeping plot area, security, extras and посёлок info.
+    Array.prototype.forEach.call(document.querySelectorAll('.field-no-land'), function (el) {
+      el.hidden = isLand || (isApartment && el.classList.contains('field-house'));
+    });
+    if (isLand) {
+      ['fHouseArea', 'fBedrooms', 'fBathrooms', 'fPoolSize', 'fYard', 'fFloors', 'fFurnished', 'fGarageSpaces'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('fAutoGate').checked = false;
+      pruneRoomPhotosFromFields();
+    }
     if (isApartment) {
       fPoolSizeEl.value = '';
       fYardEl.value = '';
@@ -960,6 +1009,9 @@ window.BS = window.BS || {};
   }
 
   fPropertyTypeEl.addEventListener('change', applyPropertyType);
+  fCountryEl.addEventListener('input', function () {
+    if (syncPropertyTypeOptions()) applyPropertyType();
+  });
 
   /* ---------------- Logo ---------------- */
 
@@ -1131,7 +1183,9 @@ window.BS = window.BS || {};
      the same-tab case (round-trips the same values the form already has). */
   function populateFormFromListing(listing) {
     if (!listing) return;
-    document.getElementById('fPropertyType').value = listing.propertyType || 'cottage';
+    // Country first: it decides which type options exist (see syncPropertyTypeOptions).
+    document.getElementById('fCountry').value = listing.country || '';
+    syncPropertyTypeOptions(listing.propertyType || 'house');
     document.getElementById('fFloorNumber').value = listing.floorNumber != null ? listing.floorNumber : '';
     document.getElementById('fTitle').value = listing.title || '';
     document.getElementById('fDescription').value = listing.description || '';
@@ -1140,7 +1194,6 @@ window.BS = window.BS || {};
     document.getElementById('fLocationName').value = listing.locationName || '';
     document.getElementById('fLat').value = listing.lat != null ? listing.lat : '';
     document.getElementById('fLng').value = listing.lng != null ? listing.lng : '';
-    document.getElementById('fCountry').value = listing.country || '';
     document.getElementById('fCurrency').value = listing.currency || 'RUB';
     document.getElementById('fSalePrice').value = listing.salePrice != null ? listing.salePrice : '';
     document.getElementById('fRentPrice').value = listing.rentPrice != null ? listing.rentPrice : '';
@@ -1524,6 +1577,7 @@ window.BS = window.BS || {};
     renderRoute();
   });
 
+  syncPropertyTypeOptions();
   applyPropertyType();
   renderLogoPreview();
   if (window.BSI18n) window.BSI18n.apply();

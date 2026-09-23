@@ -119,7 +119,7 @@ window.BSDeck = (function () {
     if (l.bathrooms != null) specs.push({ label: t('deckSpecBathrooms'), value: String(l.bathrooms) });
     if (l.poolSize) specs.push({ label: t('deckSpecPool'), value: l.poolSize });
     if (l.yard) specs.push({ label: t('deckSpecYard'), value: l.yard });
-    if (l.propertyType === 'apartment') {
+    if (isApartmentLike(l.propertyType)) {
       if (l.floorNumber != null) specs.push({ label: t('deckSpecFloor'), value: String(l.floorNumber) });
     } else if (l.floors != null) {
       specs.push({ label: t('deckSpecFloors'), value: String(l.floors) });
@@ -205,13 +205,13 @@ window.BSDeck = (function () {
      left this one looking thin (just a spec row or two) whenever an
      agent filled it in. */
   function slideBuilding(l, n) {
-    var communityText = l.propertyType === 'apartment' ? l.buildingInfo : l.communityInfo;
+    var communityText = isApartmentLike(l.propertyType) ? l.buildingInfo : l.communityInfo;
     // The slide's own kicker/label (short, same for both types) vs. the
     // free-text block's sub-label (the longer form-field phrasing) — kept
     // distinct so the paragraph isn't introduced by a bare repeat of the
     // heading directly above it.
     var communityLabel = t('deckCommunitySlideLabel');
-    var communityTextLabel = l.propertyType === 'apartment' ? t('fBuildingInfoLabel') : t('fCommunityInfoLabel');
+    var communityTextLabel = isApartmentLike(l.propertyType) ? t('fBuildingInfoLabel') : t('fCommunityInfoLabel');
 
     var specs = [];
     if (l.complexName) specs.push({ label: t('deckSpecComplexName'), value: l.complexName });
@@ -347,9 +347,18 @@ window.BSDeck = (function () {
      not to warrant sharing a module between browser and server code here.
      Empty/unset country defaults to Russia, matching this site's original
      Yandex-only behavior from before the country field existed. */
+  /* 'condo' (abroad) is a unit in a building same as 'apartment' (Russia) —
+     floor number + "О ЖК" text; 'house'/'cottage'/'villa'/'land' use the
+     house-side fields. */
+  function isApartmentLike(type) {
+    return type === 'apartment' || type === 'condo';
+  }
+
   function isRussiaCountry(country) {
-    var c = String(country || '').trim().toLowerCase();
-    return c === '' || c.indexOf('росси') !== -1 || c === 'russia' || c === 'ru';
+    // Dots/spaces stripped so 'РФ', 'Р.Ф.', 'Russian Federation' all match.
+    var c = String(country || '').toLowerCase().replace(/[\s.]/g, '');
+    return c === '' || c.indexOf('росси') !== -1 || c.indexOf('russia') !== -1 || c.indexOf('rossi') !== -1
+      || c === 'рф' || c === 'rf' || c === 'ru' || c === 'rus';
   }
 
   function slideLocation(l, nearby, n) {
@@ -1093,5 +1102,5 @@ window.BSDeck = (function () {
     activateLazyIframes(container);
   }
 
-  return { render: render, renderThumbnails: renderThumbnails };
+  return { render: render, renderThumbnails: renderThumbnails, isRussiaCountry: isRussiaCountry, isApartmentLike: isApartmentLike };
 })();
