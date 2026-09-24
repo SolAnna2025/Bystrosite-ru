@@ -136,17 +136,21 @@
           <div class="field-row">
             <div class="field">
               <label for="fCountry" data-i18n="fCountryLabel">Страна объекта</label>
-              <input type="text" id="fCountry" list="fCountryList" value="Россия" placeholder="напр. Россия, Таиланд, ОАЭ" data-i18n-placeholder="fCountryPh">
-              <datalist id="fCountryList">
-                <option value="Россия">
-                <option value="Таиланд">
-                <option value="ОАЭ">
-                <option value="Турция">
-                <option value="Кипр">
-                <option value="Черногория">
-                <option value="Испания">
-                <option value="Грузия">
-              </datalist>
+              <!-- Stored values stay the Russian names (what isRussiaCountry()
+                   and existing rows expect); only the labels are translated. -->
+              <select id="fCountry">
+                <option value="Россия" selected data-i18n="countryRussia">Россия</option>
+                <option value="Таиланд" data-i18n="countryThailand">Таиланд</option>
+                <option value="ОАЭ" data-i18n="countryUae">ОАЭ</option>
+                <option value="Турция" data-i18n="countryTurkey">Турция</option>
+                <option value="Кипр" data-i18n="countryCyprus">Кипр</option>
+                <option value="Черногория" data-i18n="countryMontenegro">Черногория</option>
+                <option value="Испания" data-i18n="countrySpain">Испания</option>
+                <option value="Грузия" data-i18n="countryGeorgia">Грузия</option>
+                <option value="Индонезия" data-i18n="countryIndonesia">Индонезия (Бали)</option>
+                <option value="Вьетнам" data-i18n="countryVietnam">Вьетнам</option>
+                <option value="Другая страна" data-i18n="countryOther">Другая страна</option>
+              </select>
             </div>
             <div class="field">
               <label for="fPropertyType" data-i18n="fPropertyTypeLabel">Тип</label>
@@ -221,9 +225,11 @@
           </div>
           <div class="field-row">
             <div class="field span-2">
-              <label for="fCoordsPaste" data-i18n="fCoordsPasteLabel">Вставить координаты из Яндекс.Карт</label>
+              <!-- Label/hint keys swap to the Google variants for non-Russian
+                   countries — see syncMapProviderHints() in js/app.js. -->
+              <label for="fCoordsPaste" id="fCoordsPasteLabel" data-i18n="fCoordsPasteLabel">Вставить координаты из Яндекс.Карт</label>
               <input type="text" id="fCoordsPaste" placeholder="напр. 43.5397321, 39.8944543" data-i18n-placeholder="fCoordsPastePh">
-              <span class="field-note" data-i18n="fCoordsPasteHint">В Яндекс.Картах: щёлкните правой кнопкой по нужной точке на карте → «Что здесь» → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами</span>
+              <span class="field-note" id="fCoordsPasteHint" data-i18n="fCoordsPasteHint">В Яндекс.Картах: щёлкните правой кнопкой по нужной точке на карте → «Что здесь» → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами</span>
             </div>
           </div>
           <div class="field-row">

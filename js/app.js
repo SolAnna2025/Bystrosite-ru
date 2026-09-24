@@ -949,9 +949,40 @@ window.BS = window.BS || {};
   var TYPE_OPTIONS_ABROAD = [['condo', 'optCondo'], ['villa', 'optVilla']];
   var TYPE_EQUIVALENT = { condo: 'apartment', apartment: 'condo', villa: 'house', house: 'villa', cottage: 'house', land: 'villa' };
 
+  /* The presentation map follows the country (Yandex for Russia, Google
+     elsewhere — see slideLocation in js/deck.js), so the coordinates-paste
+     instructions follow it too. Swapping the data-i18n key (not just the
+     text) keeps the right variant across a language switch. */
+  function syncMapProviderHints(isRu) {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    [['fCoordsPasteLabel', 'fCoordsPasteLabel'], ['fCoordsPasteHint', 'fCoordsPasteHint']].forEach(function (p) {
+      var el = document.getElementById(p[0]);
+      if (!el) return;
+      var key = isRu ? p[1] : p[1] + 'Google';
+      el.setAttribute('data-i18n', key);
+      el.textContent = t(key);
+    });
+  }
+
+  /* A listing saved back when country was free text may hold a value that
+     isn't one of the dropdown's options — add it rather than silently
+     showing (and re-saving) a different country. */
+  function setCountryValue(country) {
+    country = country || 'Россия';
+    var exists = Array.prototype.some.call(fCountryEl.options, function (o) { return o.value === country; });
+    if (!exists) {
+      var opt = document.createElement('option');
+      opt.value = country;
+      opt.textContent = country;
+      fCountryEl.insertBefore(opt, fCountryEl.lastElementChild);
+    }
+    fCountryEl.value = country;
+  }
+
   function syncPropertyTypeOptions(wanted) {
     var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
     var isRu = window.BSDeck.isRussiaCountry(fCountryEl.value);
+    syncMapProviderHints(isRu);
     var opts = isRu ? TYPE_OPTIONS_RU : TYPE_OPTIONS_ABROAD;
     var current = wanted || fPropertyTypeEl.value;
     var values = opts.map(function (o) { return o[0]; });
@@ -1009,7 +1040,7 @@ window.BS = window.BS || {};
   }
 
   fPropertyTypeEl.addEventListener('change', applyPropertyType);
-  fCountryEl.addEventListener('input', function () {
+  fCountryEl.addEventListener('change', function () {
     if (syncPropertyTypeOptions()) applyPropertyType();
   });
 
@@ -1184,7 +1215,7 @@ window.BS = window.BS || {};
   function populateFormFromListing(listing) {
     if (!listing) return;
     // Country first: it decides which type options exist (see syncPropertyTypeOptions).
-    document.getElementById('fCountry').value = listing.country || '';
+    setCountryValue(listing.country);
     syncPropertyTypeOptions(listing.propertyType || 'house');
     document.getElementById('fFloorNumber').value = listing.floorNumber != null ? listing.floorNumber : '';
     document.getElementById('fTitle').value = listing.title || '';
