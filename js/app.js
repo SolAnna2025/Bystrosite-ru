@@ -1665,6 +1665,19 @@ window.BS = window.BS || {};
     renderLogoPreview();
     renderAgentPhotoPreview();
     renderQrUploaders();
+
+    // A listing that's already saved was created with both consents given
+    // (the form can't be submitted without them) — re-editing it mustn't
+    // silently block the save on two unticked boxes at the very bottom of
+    // the form, which is exactly how edits were getting "lost".
+    if (listing.id) {
+      fConsentEl.disabled = false;
+      fConsentEl.checked = true;
+      fDataConsentEl.disabled = false;
+      fDataConsentEl.checked = true;
+      fConsentError.classList.remove('visible');
+      fDataConsentError.classList.remove('visible');
+    }
     if (window.BSI18n) window.BSI18n.apply();
     updateRequiredHighlights();
   }
@@ -1841,7 +1854,13 @@ window.BS = window.BS || {};
 
     if (state.missing.length || state.missingPrice || consentMissing || dataConsentMissing) {
       formError.classList.add('visible');
-      formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Scroll to the first actual problem, not the banner at the top —
+      // the consent boxes sit at the very bottom, so a banner-only jump
+      // left the agent looking at the wrong end of the form.
+      var firstBad = document.querySelector('#listingForm .field-required-missing');
+      if (!firstBad && consentMissing) firstBad = fConsentEl;
+      if (!firstBad && dataConsentMissing) firstBad = fDataConsentEl;
+      (firstBad || formError).scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     formError.classList.remove('visible');
@@ -1941,15 +1960,62 @@ window.BS = window.BS || {};
      shouldn't normally happen since the edit form itself is gated behind
      typing that exact phone, see the edit-auth modal, but a second tab or
      a since-changed phone can still race it). */
+  /* Save status pill — the save runs in the background while the preview
+     is already on screen, and used to fail without a word (a phone losing
+     signal halfway through uploading 20+ photos), so the agent believed
+     their edits were in. Now: "Сохраняем…" → "✓ Сохранено", or an error
+     with a "Повторить" button that resends the same listing. Leaving the
+     page mid-save also asks for confirmation. */
+  var saveStatusEl = null;
+  var saveStatusTimer = null;
+  var savesInFlight = 0;
+
+  function setSaveStatus(state, listing) {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    if (!saveStatusEl) {
+      saveStatusEl = document.createElement('div');
+      saveStatusEl.className = 'save-status';
+      saveStatusEl.setAttribute('role', 'status');
+      saveStatusEl.setAttribute('aria-live', 'polite');
+      document.body.appendChild(saveStatusEl);
+    }
+    clearTimeout(saveStatusTimer);
+    saveStatusEl.innerHTML = '';
+    saveStatusEl.className = 'save-status is-' + state;
+    var text = document.createElement('span');
+    text.textContent = t(state === 'saving' ? 'saveStatusSaving' : state === 'saved' ? 'saveStatusSaved' : 'saveStatusError');
+    saveStatusEl.appendChild(text);
+    if (state === 'error' && listing) {
+      var retry = document.createElement('button');
+      retry.type = 'button';
+      retry.textContent = t('saveStatusRetry');
+      retry.addEventListener('click', function () { persistListing(listing); });
+      saveStatusEl.appendChild(retry);
+    }
+    saveStatusEl.hidden = false;
+    if (state === 'saved') saveStatusTimer = setTimeout(function () { saveStatusEl.hidden = true; }, 4000);
+  }
+
+  window.addEventListener('beforeunload', function (e) {
+    if (savesInFlight > 0) { e.preventDefault(); e.returnValue = ''; }
+  });
+
   function persistListing(listing) {
     listing._persistError = null;
+    var settled = false;
+    function settle() { if (!settled) { settled = true; savesInFlight--; } }
+    savesInFlight++;
+    setSaveStatus('saving');
     fetch('/api/listings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(listing),
     }).then(function (res) {
+      settle();
       if (res.status === 403) {
         var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+        listing._persistError = 'forbidden';
+        setSaveStatus('error');
         showInfoModal(t('finalizeError'));
         return null;
       }
@@ -1958,10 +2024,11 @@ window.BS = window.BS || {};
       // so requestFinalize below can tell a real, permanent failure apart
       // from a save that's merely still in flight, instead of telling the
       // agent to "wait a couple seconds" indefinitely.
-      if (!res.ok) { listing._persistError = 'http_' + res.status; return null; }
+      if (!res.ok) { listing._persistError = 'http_' + res.status; setSaveStatus('error', listing); return null; }
       return res.json();
     }).then(function (data) {
       if (!data || !data.id) return;
+      setSaveStatus('saved');
       if (BS.listing !== listing) return; // agent already navigated away/edited again
       listing.id = data.id;
       listing.isFinalized = !!data.isFinalized;
@@ -1981,7 +2048,9 @@ window.BS = window.BS || {};
         history.replaceState(null, '', '/edit/' + data.id + (data.editToken ? '?t=' + data.editToken : ''));
       }
     }).catch(function (err) {
+      settle();
       listing._persistError = 'network';
+      setSaveStatus('error', listing);
       console.warn('persistListing failed (preview still works locally):', err);
     });
   }
