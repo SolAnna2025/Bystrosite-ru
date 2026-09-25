@@ -15,7 +15,7 @@ window.BSI18n = (function () {
       appBrandName: 'Быстросайт',
       appBrandTag: 'Конструктор презентаций объектов недвижимости',
 
-      landingTitle: 'Премиальная интерактивная сайт-презентация для любой недвижимости — дом, квартира, земельный участок — с живой картой и калькулятором доходности',
+      landingTitle: 'Премиальная интерактивная сайт-презентация для вашего объекта недвижимости с живой картой и калькулятором доходности',
       landingSubtitle: 'Заполните карточку объекта — получите готовую презентацию в архитектурно-издательском стиле: удобный PDF для скачивания и интерактивная веб-версия для клиента с калькулятором доходности. Слайд за слайдом, как в примере ниже.',
       landingBadge: 'Бесплатно и без ограничений',
       landingCta: 'Создать свою презентацию →',
@@ -386,7 +386,7 @@ window.BSI18n = (function () {
       appBrandName: 'Bystrosite',
       appBrandTag: 'Real-estate presentation builder',
 
-      landingTitle: 'A premium interactive website presentation for any property — house, apartment, land plot — with a live map and rental-yield calculator',
+      landingTitle: 'A premium interactive website presentation for your property with a live map and rental-yield calculator',
       landingSubtitle: 'Fill in the property card — get a finished presentation in an editorial-architectural style: a convenient downloadable PDF and an interactive web version for the client with a rental-yield calculator. Slide by slide, like the example below.',
       landingBadge: 'Free, no limits',
       landingCta: 'Build your own presentation →',
