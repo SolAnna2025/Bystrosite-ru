@@ -147,19 +147,20 @@
 .ed-rule-full { width: 100%; height: 1px; background: var(--color-border); border: 0; margin: 0; }
 
 /* ---------------- Page chrome ---------------- */
-/* Same spot on every slide — bottom-right corner (added in buildSlides,
-   js/deck.js), never part of a slide's own heading. Light wherever that
-   corner is a photo or the dark contact bar, muted over the page colour. */
-.pg-number {
-  position: absolute; z-index: 3; right: 56px; bottom: 40px;
+/* Section name + page number, top-right on every slide (added in
+   buildSlides, js/deck.js) — left of the agent's logo pill when there is
+   one (--mark-right, set in fit()), in the corner itself otherwise. */
+.slide-mark {
+  position: absolute; z-index: 3; top: 44px; right: var(--mark-right, 56px);
+  height: 40px; display: flex; align-items: center; gap: 18px;
   font-family: var(--font-body); font-size: 14px; font-weight: 600;
-  letter-spacing: 0.16em; color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap;
 }
-.slide-on-photo .pg-number,
-.slide-split-a .pg-number,
-.slide-grid3 .pg-number,
-.slide-roomgrid .pg-number { color: rgba(242, 239, 232, 0.85); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
+.slide-mark .sm-label { color: var(--color-text-muted); }
+.slide-mark .sm-num { color: var(--color-text); font-variant-numeric: tabular-nums; }
+.slide-on-photo .slide-mark .sm-label { color: rgba(242, 239, 232, 0.78); }
+.slide-on-photo .slide-mark .sm-num { color: #f2efe8; }
+.slide-on-photo .slide-mark { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
 
 .slide-pad {
   position: relative; z-index: 2;
@@ -234,7 +235,7 @@
    3 / 5 — Asymmetric two-photo spreads (architecture / outdoor)
    ============================================================ */
 .slide-split-a { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
-.slide-split-a .split-head { padding: 90px 100px 0; flex: none; }
+.slide-split-a .split-head { height: 120px; flex: none; } /* cream band under the top-right mark */
 .slide-split-a .split-photos { display: flex; gap: 3px; flex: 1; margin-top: 28px; min-height: 0; }
 .slide-split-a .split-photos .ph-media { flex: 1; }
 /* Exactly two photos (the common case) keep the asymmetric hero ratio;
@@ -278,7 +279,7 @@
    ============================================================ */
 .slide-grid3 { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
 .slide-grid3 .grid3-head {
-  flex: none; padding: 90px 100px 0;
+  flex: none; height: 120px;
   display: flex; flex-direction: column; gap: 6px;
 }
 .slide-grid3 .grid3-photos { display: flex; gap: 3px; flex: 1; margin-top: 28px; min-height: 0; }
@@ -289,7 +290,7 @@
    Details when the listing has bedrooms/bathrooms > 0)
    ============================================================ */
 .slide-roomgrid { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
-.slide-roomgrid .roomgrid-head { flex: none; padding: 90px 100px 0; }
+.slide-roomgrid .roomgrid-head { flex: none; height: 120px; }
 .slide-roomgrid .roomgrid-photos {
   flex: 1; margin-top: 28px; min-height: 0;
   display: grid; grid-auto-rows: 1fr; gap: 8px;
@@ -451,10 +452,9 @@
 .cb-name { font-family: var(--font-heading); font-size: 32px; }
 .cb-phone { font-size: 19px; letter-spacing: 0.02em; }
 /* "Действительна 1 месяц" — a quiet footnote in the slide's bottom-right
-   corner, not part of the agent's contact block; on the page number's
-   baseline, just left of it. */
+   corner, not part of the agent's contact block. */
 .cf-validity {
-  position: absolute; z-index: 3; right: 170px; bottom: 41px;
+  position: absolute; z-index: 3; right: 56px; bottom: 36px;
   font-size: 12px; letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.55);
 }
 .cb-messengers { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }

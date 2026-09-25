@@ -79,8 +79,10 @@ window.BSDeck = (function () {
     return '<div class="ph-placeholder"><span class="ph-placeholder-label">' + esc(t('photoPlaceholder')) + '</span></div>';
   }
 
-  function pageNumber(n, total) {
-    return '<span class="pg-number">' + pad2(n) + ' / ' + pad2(total) + '</span>';
+  // Section name + page number, top-right (left of the agent's logo — see
+  // fit()'s --mark-right). Cover and Emotion carry just the number.
+  function slideMark(label, n) {
+    return '<div class="slide-mark">' + (label ? '<span class="sm-label">' + esc(label) + '</span>' : '') + '<span class="sm-num">' + pad2(n) + '</span></div>';
   }
 
   /* ---------------- Photos ---------------- */
@@ -147,11 +149,11 @@ window.BSDeck = (function () {
 
     return {
       label: t('deckSpaceLabel'),
+      mark: t('deckSpaceKicker'), // short — the slide's own title already says "Пространство для жизни"
       cls: 'slide-living',
       html:
         '<div class="ph-media">' + media(photo, t('deckLivingAlt')) + '</div>' +
         '<div class="living-text">' +
-          '<span class="ed-kicker">' + esc(t('deckSpaceKicker')) + '</span>' +
           '<h2 class="ed-title ed-title-md ed-title-2l">' + esc(t('deckSpaceTitleL1')) + '<br>' + esc(t('deckSpaceTitleL2')) + '</h2>' +
           '<div class="spec-grid">' + specRows + '</div>' +
           (l.extraFeatures ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckExtraLabel')) + '</span><p>' + esc(l.extraFeatures) + '</p></div>' : '') +
@@ -170,7 +172,6 @@ window.BSDeck = (function () {
         html:
           '<div class="ph-media">' + media(photo, l.title) + '</div>' +
           '<div class="emo-text">' +
-            '<span class="ed-kicker">' + esc(l.title) + '</span>' +
             (phrase ? '<h2 class="ed-title ed-title-md ed-title-2l">' + esc(phrase) + '</h2>' : '') +
             desc +
           '</div>',
@@ -200,7 +201,7 @@ window.BSDeck = (function () {
       label: t('deckArchitectureLabel'),
       cls: 'slide-split-a',
       html:
-        '<div class="split-head"><span class="ed-kicker">' + esc(t('deckArchitectureLabel')) + '</span></div>' +
+        '<div class="split-head"></div>' +
         '<div class="split-photos split-photos-' + shown.length + '">' + photosHtml + '</div>',
     };
   }
@@ -253,7 +254,6 @@ window.BSDeck = (function () {
       cls: 'slide-conditions',
       html:
         '<div class="slide-pad">' +
-          '<span class="ed-kicker">' + esc(communityLabel) + '</span>' +
           (specRows ? '<div class="spec-grid">' + specRows + '</div>' : '') +
           (l.infrastructure ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckInfrastructureLabel')) + '</span><p>' + esc(l.infrastructure) + '</p></div>' : '') +
           (communityText ? '<div class="extra-features"><span class="ef-label">' + esc(communityTextLabel) + '</span><p>' + esc(communityText) + '</p></div>' : '') +
@@ -285,7 +285,7 @@ window.BSDeck = (function () {
       label: kicker,
       cls: 'slide-split-a',
       html:
-        '<div class="split-head"><span class="ed-kicker">' + esc(kicker) + '</span></div>' +
+        '<div class="split-head"></div>' +
         '<div class="split-photos split-photos-' + items.length + '">' + photosHtml + '</div>',
     };
   }
@@ -297,9 +297,7 @@ window.BSDeck = (function () {
       label: t('deckDetailsLabel'),
       cls: 'slide-grid3',
       html:
-        '<div class="grid3-head">' +
-          '<span class="ed-kicker">' + esc(t('deckDetailsLabel')) + '</span>' +
-        '</div>' +
+        '<div class="grid3-head"></div>' +
         '<div class="grid3-photos">' +
           '<div class="ph-media">' + media(a, alt) + '</div>' +
           '<div class="ph-media">' + media(b, alt) + '</div>' +
@@ -327,7 +325,7 @@ window.BSDeck = (function () {
       label: groupTitle,
       cls: 'slide-roomgrid',
       html:
-        '<div class="roomgrid-head"><span class="ed-kicker">' + esc(groupTitle) + '</span></div>' +
+        '<div class="roomgrid-head"></div>' +
         '<div class="roomgrid-photos" style="grid-template-columns:repeat(' + cols + ',1fr)">' + items + '</div>',
     };
   }
@@ -361,7 +359,7 @@ window.BSDeck = (function () {
       label: t('deckInteriorsLabel'),
       cls: 'slide-roomgrid',
       html:
-        '<div class="roomgrid-head"><span class="ed-kicker">' + esc(t('deckInteriorsLabel')) + '</span></div>' +
+        '<div class="roomgrid-head"></div>' +
         '<div class="roomgrid-photos" style="grid-template-columns:repeat(' + cols + ',1fr)">' + items + '</div>',
     };
   }
@@ -420,7 +418,6 @@ window.BSDeck = (function () {
            iframe always has its true, final size the moment it starts loading. */
         '<div class="loc-map"><iframe data-src="' + esc(mapSrc) + '" title="' + esc(t('deckMapTitle')) + '" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>' +
         '<div class="loc-text">' +
-          '<span class="ed-kicker">' + esc(t('deckLocationLabel')) + '</span>' +
           '<h2 class="ed-title ed-title-md ed-title-2l" style="margin-top:10px">' + esc(l.locationName) + '</h2>' +
           '<div class="loc-coords">' + esc(String(l.lat)) + ', ' + esc(String(l.lng)) + '</div>' +
           (rows ? '<div class="loc-nearby-list">' + rows + '</div>' : '') +
@@ -491,7 +488,6 @@ window.BSDeck = (function () {
       cls: 'slide-conditions',
       html:
         '<div class="slide-pad">' +
-          '<span class="ed-kicker">' + esc(t('deckConditionsLabel')) + '</span>' +
           '<div class="cond-body">' +
             '<div class="cond-price">' + rows + '</div>' +
             (costs ? '<div class="cond-costs"><div class="cc-title">' + esc(t('deckMonthly')) + '</div>' + costs + '</div>' : '') +
@@ -578,10 +574,9 @@ window.BSDeck = (function () {
       slideConditions(l, ++n),
       slideFinal(l, ++n, total)
     );
-    // Page number: one fixed spot, bottom-right, on every slide — never
-    // part of a slide's own heading.
+    // Section name + number: one fixed spot, top-right, on every slide.
     slides.forEach(function (s, i) {
-      s.html += pageNumber(i + 1, slides.length);
+      s.html += slideMark(i < 2 ? '' : (s.mark || s.label), i + 1);
     });
     return slides;
   }
@@ -603,6 +598,15 @@ window.BSDeck = (function () {
     return !!(window.visualViewport && window.visualViewport.scale > 1.01);
   }
 
+  // The top-right mark sits just left of the agent's logo pill, whose width
+  // depends on the logo/company name — measured, not guessed. (Unscaled
+  // layout px, so the stage transform doesn't matter.)
+  function placeSlideMarks() {
+    var logo = stage && stage.querySelector('.global-logo');
+    if (logo && logo.offsetWidth) stage.style.setProperty('--mark-right', (48 + logo.offsetWidth + 32) + 'px');
+    else if (!logo && stage) stage.style.removeProperty('--mark-right');
+  }
+
   function fit() {
     if (pinchZoomed()) return;
     var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
@@ -620,6 +624,7 @@ window.BSDeck = (function () {
     // computed once, safe forever.
     var s = Math.min(vw / 1920, vh / 1080, 1);
     stage.style.transform = 'scale(' + s + ')';
+    placeSlideMarks();
   }
 
   /* Inactive slides are hidden with display:none — cheap, and correct for
@@ -840,6 +845,8 @@ window.BSDeck = (function () {
     var savedIdx = idx;
     var prevStageTransform = stage.style.transform;
     stage.style.transform = 'none';
+    var prevMarkRight = stage.style.getPropertyValue('--mark-right');
+    stage.style.removeProperty('--mark-right');
 
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080], compress: true });
@@ -863,6 +870,7 @@ window.BSDeck = (function () {
 
     function cleanup() {
       stage.style.transform = prevStageTransform;
+      if (prevMarkRight) stage.style.setProperty('--mark-right', prevMarkRight);
       showSlide(savedIdx);
       armKenBurns(slidesEls[savedIdx]);
     }
@@ -1108,6 +1116,7 @@ window.BSDeck = (function () {
       if (listing.companyName) logoWrap.innerHTML += '<span class="global-logo-name">' + esc(listing.companyName) + '</span>';
       stage.appendChild(logoWrap);
     }
+    stage.style.removeProperty('--mark-right');
 
     slidesEls = Array.prototype.slice.call(stage.querySelectorAll('.slide'));
     idx = 0;
