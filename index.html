@@ -506,6 +506,12 @@
             <label class="checkbox-label"><input type="checkbox" id="fColorGrade"> <span data-i18n="fColorGradeLabel">Применить цветокоррекцию</span></label>
           </div>
           <p class="field-group-hint" data-i18n="fColorGradeHint">Плёночный вид: приглушённые тона, тёплый баланс белого, мягкая виньетка и лёгкая рельефность текстур — применяется автоматически к каждому загруженному фото</p>
+          <div class="photo-bulk">
+            <button type="button" class="btn btn-primary btn-sm" id="photoBulkBtn" data-i18n="photoBulkBtn">Загрузить все фото сразу</button>
+            <input type="file" id="photoBulkInput" accept="image/*" multiple hidden>
+            <span class="photo-bulk-status" id="photoBulkStatus" aria-live="polite"></span>
+          </div>
+          <p class="field-group-hint" data-i18n="photoDragHint">Чтобы поменять фото местами — перетащите одно на другое (на телефоне: нажмите и подержите фото, затем ведите пальцем)</p>
           <div class="photo-slots" id="photoSlots"><!-- slot tiles injected by js/app.js --></div>
           <p class="photo-add-count" id="photoCount"></p>
         </section>

@@ -140,6 +140,11 @@ window.BSI18n = (function () {
       photoAddCount: '{filled} / {total} фотографий загружено',
       slotThumbTitle: 'Загрузить фото',
       slotRemoveLabel: 'Удалить фото',
+      photoBulkBtn: 'Загрузить все фото сразу',
+      photoBulkLoading: 'Обработка {done} из {total}…',
+      photoBulkDone: 'Загружено {count} фото. Перетаскивайте, чтобы поменять местами',
+      photoBulkOverflow: 'Загружено {count} фото, ещё {extra} не поместились — все слоты заняты',
+      photoDragHint: 'Чтобы поменять фото местами — перетащите одно на другое (на телефоне: нажмите и подержите фото, затем ведите пальцем)',
 
       secLogoTitle: 'Логотип и название агентства',
       secLogoHint: 'Необязательно — оба элемента вместе появятся в правом верхнем углу каждого слайда презентации',
@@ -506,6 +511,11 @@ window.BSI18n = (function () {
       photoAddCount: '{filled} / {total} photos uploaded',
       slotThumbTitle: 'Upload photo',
       slotRemoveLabel: 'Remove photo',
+      photoBulkBtn: 'Upload all photos at once',
+      photoBulkLoading: 'Processing {done} of {total}…',
+      photoBulkDone: '{count} photos uploaded. Drag to swap them around',
+      photoBulkOverflow: '{count} photos uploaded, {extra} more did not fit — all slots are taken',
+      photoDragHint: 'To swap photos, drag one onto another (on a phone: press and hold a photo, then move your finger)',
 
       secLogoTitle: 'Agency logo & name',
       secLogoHint: 'Optional — both appear together in the top-right corner of every slide',

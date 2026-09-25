@@ -853,6 +853,7 @@ window.BS = window.BS || {};
 
       var tile = document.createElement('div');
       tile.className = 'slot-tile';
+      tile.setAttribute('data-slot', slot.key);
 
       var thumb = document.createElement('button');
       thumb.type = 'button';
@@ -872,9 +873,13 @@ window.BS = window.BS || {};
           renderPhotoSlotsUI();
         }).catch(function () { showInfoModal(window.BSI18n.t('photoDecodeError')); });
       });
-      thumb.addEventListener('click', function () { input.click(); });
+      thumb.addEventListener('click', function () {
+        if (Date.now() - lastDragEndAt < 600) return; // the click that ends a drag isn't an "upload" tap
+        input.click();
+      });
 
       if (photo) {
+        attachSlotDrag(thumb, slot.key);
         var img = document.createElement('img');
         img.src = photo.dataUrl;
         img.alt = slot.label;
@@ -911,6 +916,181 @@ window.BS = window.BS || {};
     });
 
     photoCount.textContent = window.BSI18n.t('photoAddCount', { filled: filled, total: slots.length });
+  }
+
+  /* ---------------- Bulk upload ----------------
+     One multi-select picker (select 20 shots in the phone gallery at once)
+     that fills slots in their deck order. Only slots that are empty or still
+     hold a demo sample (assets/stock/) are filled — a photo the agent already
+     put somewhere on purpose is never overwritten. Files are processed one
+     at a time so a phone doesn't decode 20 full-size images simultaneously. */
+  var photoBulkBtn = document.getElementById('photoBulkBtn');
+  var photoBulkInput = document.getElementById('photoBulkInput');
+  var photoBulkStatus = document.getElementById('photoBulkStatus');
+
+  function isReplaceableSlot(key) {
+    var p = BS.photosBySlot[key];
+    return !p || /^assets\/stock\//.test(p.dataUrl || '');
+  }
+
+  photoBulkBtn.addEventListener('click', function () { photoBulkInput.click(); });
+  photoBulkInput.addEventListener('change', function () {
+    var files = Array.prototype.slice.call(photoBulkInput.files || []);
+    photoBulkInput.value = '';
+    if (!files.length) return;
+    var t = window.BSI18n.t;
+    var targets = currentSlots().filter(function (s) { return isReplaceableSlot(s.key); }).map(function (s) { return s.key; });
+    var toLoad = files.slice(0, targets.length);
+    var extra = files.length - toLoad.length;
+    var grade = fColorGradeEl ? fColorGradeEl.checked : true;
+    var loaded = 0;
+    photoBulkBtn.disabled = true;
+
+    toLoad.reduce(function (chain, file, i) {
+      return chain.then(function () {
+        photoBulkStatus.textContent = t('photoBulkLoading', { done: i + 1, total: toLoad.length });
+        return resizeImage(file, 1600, 0.82, grade, 'image/jpeg').then(function (dataUrl) {
+          BS.photosBySlot[targets[loaded]] = { name: file.name, dataUrl: dataUrl };
+          loaded++;
+          renderPhotoSlotsUI();
+        }, function () { /* skip an undecodable file, keep going */ });
+      });
+    }, Promise.resolve()).then(function () {
+      photoBulkBtn.disabled = false;
+      var skipped = extra + (toLoad.length - loaded);
+      photoBulkStatus.textContent = skipped > 0
+        ? t('photoBulkOverflow', { count: loaded, extra: skipped })
+        : t('photoBulkDone', { count: loaded });
+      if (loaded === 0) showInfoModal(t('photoDecodeError'));
+    });
+  });
+
+  /* ---------------- Drag to swap ----------------
+     Drop a photo on another slot to swap the two (or move it, if that slot
+     is empty). Built on pointer events rather than HTML5 drag-and-drop,
+     which doesn't work on phones and is blocked anyway by the dragstart
+     guard at the top of this file. Mouse: drag starts after a small move.
+     Touch: press and hold ~0.3s first, so a normal swipe still scrolls. */
+  var lastDragEndAt = 0;
+  var drag = null; // { key, ghost, overTile, x, y, dx, dy, raf }
+
+  document.addEventListener('touchmove', function (e) {
+    if (drag) e.preventDefault(); // keep the page still while a photo is carried
+  }, { passive: false });
+
+  function attachSlotDrag(thumb, key) {
+    thumb.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0 || drag) return;
+      var startX = e.clientX, startY = e.clientY;
+      var isTouch = e.pointerType !== 'mouse';
+      var pending = true;
+      var holdTimer = isTouch ? setTimeout(begin, 300) : null;
+
+      function begin() {
+        if (!pending) return;
+        cleanup();
+        startSlotDrag(thumb, key, startX, startY);
+        if (navigator.vibrate) { try { navigator.vibrate(15); } catch (err) { /* ignore */ } }
+      }
+      function onMove(ev) {
+        if (!pending) return;
+        var moved = Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY);
+        if (isTouch) { if (moved > 10) cleanup(); } // it's a scroll, not a hold
+        else if (moved > 6) { startX = ev.clientX; startY = ev.clientY; begin(); }
+      }
+      function cleanup() {
+        pending = false;
+        clearTimeout(holdTimer);
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', cleanup);
+        window.removeEventListener('pointercancel', cleanup);
+      }
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', cleanup);
+      window.addEventListener('pointercancel', cleanup);
+    });
+  }
+
+  function startSlotDrag(thumb, key, x, y) {
+    var rect = thumb.getBoundingClientRect();
+    var ghost = document.createElement('div');
+    ghost.className = 'slot-drag-ghost';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    var img = document.createElement('img');
+    img.src = BS.photosBySlot[key].dataUrl;
+    ghost.appendChild(img);
+    document.body.appendChild(ghost);
+    thumb.parentNode.classList.add('is-drag-source');
+    document.body.classList.add('is-slot-dragging');
+
+    drag = { key: key, ghost: ghost, overTile: null, x: x, y: y, dx: rect.width / 2, dy: rect.height / 2, raf: 0 };
+    moveGhost();
+    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointerup', onDragEnd);
+    window.addEventListener('pointercancel', onDragCancel);
+    drag.raf = requestAnimationFrame(autoScroll);
+  }
+
+  function moveGhost() {
+    drag.ghost.style.transform = 'translate(' + (drag.x - drag.dx) + 'px,' + (drag.y - drag.dy) + 'px)';
+    var el = document.elementFromPoint(drag.x, drag.y);
+    var tile = el && el.closest ? el.closest('#photoSlots .slot-tile') : null;
+    if (tile && tile.getAttribute('data-slot') === drag.key) tile = null;
+    if (tile !== drag.overTile) {
+      if (drag.overTile) drag.overTile.classList.remove('is-drop-target');
+      if (tile) tile.classList.add('is-drop-target');
+      drag.overTile = tile;
+    }
+  }
+
+  // Scrolls the page while the finger/cursor sits near the top or bottom
+  // edge, so a photo can be carried to a slot that's off-screen.
+  function autoScroll() {
+    if (!drag) return;
+    var edge = 70, h = window.innerHeight, step = 0;
+    if (drag.y < edge) step = -Math.ceil((edge - drag.y) / 5);
+    else if (drag.y > h - edge) step = Math.ceil((drag.y - (h - edge)) / 5);
+    if (step) { window.scrollBy(0, step); moveGhost(); }
+    drag.raf = requestAnimationFrame(autoScroll);
+  }
+
+  function onDragMove(e) {
+    if (!drag) return;
+    drag.x = e.clientX; drag.y = e.clientY;
+    moveGhost();
+  }
+
+  function finishDrag() {
+    cancelAnimationFrame(drag.raf);
+    drag.ghost.remove();
+    document.body.classList.remove('is-slot-dragging');
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+    window.removeEventListener('pointercancel', onDragCancel);
+    lastDragEndAt = Date.now();
+    var d = drag;
+    drag = null;
+    return d;
+  }
+
+  function onDragEnd(e) {
+    if (!drag) return;
+    onDragMove(e); // drop where the pointer actually is, even if no move event came in between
+    var d = finishDrag();
+    if (d.overTile) {
+      var toKey = d.overTile.getAttribute('data-slot');
+      var a = BS.photosBySlot[d.key], b = BS.photosBySlot[toKey];
+      BS.photosBySlot[toKey] = a;
+      if (b) BS.photosBySlot[d.key] = b; else delete BS.photosBySlot[d.key];
+    }
+    renderPhotoSlotsUI();
+  }
+
+  function onDragCancel() {
+    if (!drag) return;
+    finishDrag();
+    renderPhotoSlotsUI();
   }
 
   fBedroomsEl.addEventListener('input', renderPhotoSlotsUI);
