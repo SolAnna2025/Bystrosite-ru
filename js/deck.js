@@ -525,6 +525,9 @@ window.BSDeck = (function () {
           '<div class="ph-media" style="position:absolute;inset:0">' + media(getPhoto(l, 'final'), l.title + t('deckEveningSuffix')) + '<div class="ph-scrim-bottom"></div></div>' +
           (closing ? '<div class="cf-phrase-wrap"><p class="ed-phrase">' + esc(closing) + '</p></div>' : '') +
           '<span class="cf-validity">' + esc(t('deckValidityNote')) + '</span>' +
+          // A quiet line for whoever receives this presentation — other
+          // agents included — pointing back to the service and its bot.
+          '<span class="cf-promo"><a href="' + location.origin + '/" target="_blank" rel="noopener">' + esc(t('deckPromo')) + '</a> · <a href="https://t.me/proffbrokerr_rubot" target="_blank" rel="noopener">@proffbrokerr_rubot</a></span>' +
         '</div>' +
         '<div class="contact-bar">' +
           '<div class="cb-photo">' +

@@ -213,6 +213,9 @@ figure { margin: 0; }
 .app-footer p { margin: 0; }
 .app-footer p + p { margin-top: 6px; }
 .app-footer a { color: var(--color-text-muted); }
+.footer-promo { margin: 6px 0; }
+.footer-promo p + p { margin-top: 4px; }
+.footer-promo a { color: var(--color-text); font-weight: 600; }
 
 /* ---------------- Layout shell for the form page ---------------- */
 .form-shell {

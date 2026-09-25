@@ -453,6 +453,12 @@
 /* "Действительна 1 месяц" — a quiet footnote in the bottom-right corner
    of the final slide's photo (the slide's own corner holds the logo), not
    part of the agent's contact block. */
+.cf-promo {
+  position: absolute; z-index: 3; left: 100px; bottom: 28px;
+  font-size: 12px; letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.6);
+}
+.cf-promo a { color: inherit; text-decoration: none; }
+.cf-promo a:hover { color: #f2efe8; text-decoration: underline; }
 .cf-validity {
   position: absolute; z-index: 3; right: 56px; bottom: 28px;
   font-size: 12px; letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.55);
