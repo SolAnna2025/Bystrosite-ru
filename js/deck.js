@@ -594,7 +594,15 @@ window.BSDeck = (function () {
   var animating = false;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Pinch-zoomed in on a phone: the visual viewport shrinks, and refitting
+  // to it would scale the stage down by exactly the zoom — cancelling the
+  // pinch. Leave the stage alone until the viewer zooms back out.
+  function pinchZoomed() {
+    return !!(window.visualViewport && window.visualViewport.scale > 1.01);
+  }
+
   function fit() {
+    if (pinchZoomed()) return;
     var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
     var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
     // Capped at 1: on a large/high-res monitor (vw/vh past 1920x1080), a
@@ -999,7 +1007,10 @@ window.BSDeck = (function () {
     if (wired) return;
     wired = true;
     window.addEventListener('resize', fit);
-    window.addEventListener('orientationchange', fit);
+    window.addEventListener('orientationchange', function () {
+      // iOS fires this before the new size is in place — fit again once it is.
+      fit(); setTimeout(fit, 250); setTimeout(fit, 600);
+    });
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', fit);
       window.visualViewport.addEventListener('scroll', fit);
@@ -1056,11 +1067,14 @@ window.BSDeck = (function () {
 
     var touchStartX = null, touchStartY = null, touchTarget = null;
     stageOuter.addEventListener('touchstart', function (e) {
+      // Two fingers = pinch, and a one-finger drag while zoomed in = looking
+      // around the photo — neither is a swipe to the next slide.
+      if (e.touches.length > 1 || pinchZoomed()) { touchStartX = null; return; }
       var t = e.changedTouches[0];
       touchStartX = t.clientX; touchStartY = t.clientY; touchTarget = e.target;
     }, { passive: true });
     stageOuter.addEventListener('touchend', function (e) {
-      if (touchStartX === null || isEditingContext(touchTarget)) { touchStartX = null; return; }
+      if (touchStartX === null || pinchZoomed() || isEditingContext(touchTarget)) { touchStartX = null; return; }
       var t = e.changedTouches[0];
       var dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { dx < 0 ? go(idx + 1) : go(idx - 1); }
