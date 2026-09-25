@@ -578,8 +578,8 @@ window.BSDeck = (function () {
       slideConditions(l, ++n),
       slideFinal(l, ++n, total)
     );
-    // Page number: one fixed spot, top-left, on every slide — never part of
-    // a slide's own heading. Light over a photo, muted over the page colour.
+    // Page number: one fixed spot, bottom-right, on every slide — never
+    // part of a slide's own heading.
     slides.forEach(function (s, i) {
       s.html += pageNumber(i + 1, slides.length);
     });
