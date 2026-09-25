@@ -1525,6 +1525,7 @@ window.BS = window.BS || {};
       agentPhotoPreview.appendChild(span);
       agentPhotoRemoveBtn.hidden = true;
     }
+    checkContactsChanged();
   }
 
   function selectedMessengers() {
@@ -1578,6 +1579,7 @@ window.BS = window.BS || {};
       tile.appendChild(input);
       qrUploadersEl.appendChild(tile);
     });
+    checkContactsChanged();
   }
 
   MESSENGER_DEFS.forEach(function (m) {
@@ -1667,9 +1669,12 @@ window.BS = window.BS || {};
     renderQrUploaders();
 
     // A listing that's already saved was created with both consents given
-    // (the form can't be submitted without them) — re-editing it mustn't
-    // silently block the save on two unticked boxes at the very bottom of
-    // the form, which is exactly how edits were getting "lost".
+    // (the form can't be submitted without them), and that consent covers
+    // the contact data it was given for — so re-editing the property
+    // itself keeps both ticked (they used to reset, silently blocking the
+    // save). Changing the agent's own contact data is new personal data,
+    // though: checkContactsChanged() below unticks them again for that.
+    fConsentRenewNoteEl.hidden = true;
     if (listing.id) {
       fConsentEl.disabled = false;
       fConsentEl.checked = true;
@@ -1677,6 +1682,9 @@ window.BS = window.BS || {};
       fDataConsentEl.checked = true;
       fConsentError.classList.remove('visible');
       fDataConsentError.classList.remove('visible');
+      contactSnapshot = contactSignature();
+    } else {
+      contactSnapshot = null;
     }
     if (window.BSI18n) window.BSI18n.apply();
     updateRequiredHighlights();
@@ -1796,6 +1804,42 @@ window.BS = window.BS || {};
   }
   fConsentEl.addEventListener('change', syncDataConsentAvailability);
   syncDataConsentAvailability();
+
+  /* Consent follows the contact data. The agent's name, phone, photo,
+     messengers and QR codes are the personal data consent was given for;
+     once any of them differs from what the saved listing had, both boxes
+     are unticked and have to be confirmed again. contactSnapshot is taken
+     in populateFormFromListing (saved listings only — a brand-new form
+     has no prior consent to keep). */
+  var fConsentRenewNoteEl = document.getElementById('fConsentRenewNote');
+  var contactSnapshot = null;
+
+  function contactSignature() {
+    var qr = BS.agentQr || {};
+    return JSON.stringify([
+      val('fAgentName'),
+      normalizeContactPhone(val('fAgentPhone')),
+      BS.agentPhoto ? String(BS.agentPhoto).length + ':' + String(BS.agentPhoto).slice(-40) : '',
+      selectedMessengers(),
+      Object.keys(qr).sort().map(function (k) { return k + ':' + String(qr[k]).length + ':' + String(qr[k]).slice(-40); }),
+    ]);
+  }
+
+  function normalizeContactPhone(p) { return String(p || '').replace(/\D/g, ''); }
+
+  function checkContactsChanged() {
+    if (!contactSnapshot || !fConsentEl) return;
+    if (contactSignature() === contactSnapshot) return;
+    contactSnapshot = null; // once is enough — re-ticking is up to the agent now
+    fConsentEl.checked = false;
+    syncDataConsentAvailability();
+    fConsentRenewNoteEl.hidden = false;
+  }
+
+  ['fAgentName', 'fAgentPhone'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', checkContactsChanged);
+  });
+  fConsentEl.addEventListener('change', function () { if (fConsentEl.checked) fConsentRenewNoteEl.hidden = true; });
   fDataConsentEl.addEventListener('change', function () {
     fDataConsentError.classList.remove('visible');
   });
