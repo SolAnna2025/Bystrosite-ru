@@ -147,11 +147,10 @@
 .ed-rule-full { width: 100%; height: 1px; background: var(--color-border); border: 0; margin: 0; }
 
 /* ---------------- Page chrome ---------------- */
-/* Section name + page number, top-right on every slide (added in
-   buildSlides, js/deck.js) — left of the agent's logo pill when there is
-   one (--mark-right, set in fit()), in the corner itself otherwise. */
+/* Section name + page number, top-right corner of every slide (added in
+   buildSlides, js/deck.js). */
 .slide-mark {
-  position: absolute; z-index: 3; top: 44px; right: var(--mark-right, 56px);
+  position: absolute; z-index: 3; top: 44px; right: 56px;
   height: 40px; display: flex; align-items: center; gap: 18px;
   font-family: var(--font-body); font-size: 14px; font-weight: 600;
   letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap;
@@ -451,10 +450,11 @@
 .cb-info { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
 .cb-name { font-family: var(--font-heading); font-size: 32px; }
 .cb-phone { font-size: 19px; letter-spacing: 0.02em; }
-/* "Действительна 1 месяц" — a quiet footnote in the slide's bottom-right
-   corner, not part of the agent's contact block. */
+/* "Действительна 1 месяц" — a quiet footnote in the bottom-right corner
+   of the final slide's photo (the slide's own corner holds the logo), not
+   part of the agent's contact block. */
 .cf-validity {
-  position: absolute; z-index: 3; right: 56px; bottom: 36px;
+  position: absolute; z-index: 3; right: 56px; bottom: 28px;
   font-size: 12px; letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.55);
 }
 .cb-messengers { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
@@ -465,7 +465,7 @@
   padding: 7px 16px; border-radius: 999px; letter-spacing: 0.02em;
 }
 .msg-pill.active { background: #f2efe8; color: var(--color-accent-dark); border-color: #f2efe8; }
-.cb-qrs { display: flex; gap: 20px; flex: none; }
+.cb-qrs { display: flex; gap: 20px; flex: none; margin-bottom: 56px; } /* room below for the agent's logo in the corner */
 .cb-qr {
   width: 168px; height: 168px; flex: none;
   background: rgba(242, 239, 232, 0.94);
@@ -479,19 +479,21 @@
 /* A dark translucent pill, same tone as .deck-nav, so it reads over any
    slide background (photo or light cream) without per-slide color logic. */
 .global-logo {
-  position: absolute; top: 32px; right: 48px; z-index: 20;
-  display: flex; align-items: center; gap: 16px;
+  /* Bottom-right corner, no backing plate: dark over the page colour,
+     light where that corner is a photo (.logo-on-photo, toggled per slide
+     by syncLogoTone in js/deck.js). */
+  position: absolute; bottom: 36px; right: 56px; z-index: 20;
+  height: 40px; display: flex; align-items: center; gap: 16px;
   max-width: 480px;
-  padding: 12px 22px;
-  background: rgba(23, 22, 15, 0.68);
-  border-radius: 999px;
 }
+.stage.logo-on-photo .global-logo-name { color: #f2efe8; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4); }
+.stage.logo-on-photo .global-logo img { filter: drop-shadow(0 1px 8px rgba(0, 0, 0, 0.35)); }
 .global-logo img {
   max-width: 190px; max-height: 68px; object-fit: contain; display: block;
 }
 .global-logo-name {
   font-family: var(--font-heading); font-weight: 600; font-size: 22px;
-  color: #f2efe8; letter-spacing: 0.01em; white-space: nowrap;
+  color: var(--color-text); letter-spacing: 0.01em; white-space: nowrap;
 }
 
 /* ---------------- Nav chrome ---------------- */

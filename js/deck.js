@@ -79,8 +79,8 @@ window.BSDeck = (function () {
     return '<div class="ph-placeholder"><span class="ph-placeholder-label">' + esc(t('photoPlaceholder')) + '</span></div>';
   }
 
-  // Section name + page number, top-right (left of the agent's logo — see
-  // fit()'s --mark-right). Cover and Emotion carry just the number.
+  // Section name + page number, top-right corner. Cover and Emotion carry
+  // just the number.
   function slideMark(label, n) {
     return '<div class="slide-mark">' + (label ? '<span class="sm-label">' + esc(label) + '</span>' : '') + '<span class="sm-num">' + pad2(n) + '</span></div>';
   }
@@ -524,6 +524,7 @@ window.BSDeck = (function () {
         '<div class="cf-photo-area">' +
           '<div class="ph-media" style="position:absolute;inset:0">' + media(getPhoto(l, 'final'), l.title + t('deckEveningSuffix')) + '<div class="ph-scrim-bottom"></div></div>' +
           (closing ? '<div class="cf-phrase-wrap"><p class="ed-phrase">' + esc(closing) + '</p></div>' : '') +
+          '<span class="cf-validity">' + esc(t('deckValidityNote')) + '</span>' +
         '</div>' +
         '<div class="contact-bar">' +
           '<div class="cb-photo">' +
@@ -537,8 +538,7 @@ window.BSDeck = (function () {
             (msgPillsHtml ? '<div class="cb-messengers">' + msgPillsHtml + '</div>' : '') +
           '</div>' +
           (qrsHtml ? '<div class="cb-qrs">' + qrsHtml + '</div>' : '') +
-        '</div>' +
-        '<span class="cf-validity">' + esc(t('deckValidityNote')) + '</span>',
+        '</div>',
     };
   }
 
@@ -598,15 +598,6 @@ window.BSDeck = (function () {
     return !!(window.visualViewport && window.visualViewport.scale > 1.01);
   }
 
-  // The top-right mark sits just left of the agent's logo pill, whose width
-  // depends on the logo/company name — measured, not guessed. (Unscaled
-  // layout px, so the stage transform doesn't matter.)
-  function placeSlideMarks() {
-    var logo = stage && stage.querySelector('.global-logo');
-    if (logo && logo.offsetWidth) stage.style.setProperty('--mark-right', (48 + logo.offsetWidth + 32) + 'px');
-    else if (!logo && stage) stage.style.removeProperty('--mark-right');
-  }
-
   function fit() {
     if (pinchZoomed()) return;
     var vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
@@ -624,7 +615,6 @@ window.BSDeck = (function () {
     // computed once, safe forever.
     var s = Math.min(vw / 1920, vh / 1080, 1);
     stage.style.transform = 'scale(' + s + ')';
-    placeSlideMarks();
   }
 
   /* Inactive slides are hidden with display:none — cheap, and correct for
@@ -845,8 +835,6 @@ window.BSDeck = (function () {
     var savedIdx = idx;
     var prevStageTransform = stage.style.transform;
     stage.style.transform = 'none';
-    var prevMarkRight = stage.style.getPropertyValue('--mark-right');
-    stage.style.removeProperty('--mark-right');
 
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080], compress: true });
@@ -870,14 +858,23 @@ window.BSDeck = (function () {
 
     function cleanup() {
       stage.style.transform = prevStageTransform;
-      if (prevMarkRight) stage.style.setProperty('--mark-right', prevMarkRight);
       showSlide(savedIdx);
       armKenBurns(slidesEls[savedIdx]);
     }
     return chain.then(function () { cleanup(); return doc; }, function (err) { cleanup(); throw err; });
   }
 
+  // The agent's logo (bottom-right, no backing plate): light where that
+  // corner is a photo or the dark contact bar, dark over the page colour —
+  // switched as each slide comes in.
+  var LOGO_ON_PHOTO = ['slide-on-photo', 'slide-split-a', 'slide-grid3', 'slide-roomgrid'];
+  function syncLogoTone(slideEl) {
+    if (!stage || !slideEl) return;
+    stage.classList.toggle('logo-on-photo', LOGO_ON_PHOTO.some(function (c) { return slideEl.classList.contains(c); }));
+  }
+
   function showSlide(i) {
+    syncLogoTone(slidesEls[i]);
     slidesEls.forEach(function (s, si) {
       if (si === i) {
         s.style.display = '';
@@ -916,6 +913,7 @@ window.BSDeck = (function () {
 
     toEl.style.display = '';
     activateLazyIframes(toEl);
+    syncLogoTone(toEl);
 
     void fromEl.offsetWidth; // force reflow so the animation classes transition cleanly
 
@@ -1116,7 +1114,6 @@ window.BSDeck = (function () {
       if (listing.companyName) logoWrap.innerHTML += '<span class="global-logo-name">' + esc(listing.companyName) + '</span>';
       stage.appendChild(logoWrap);
     }
-    stage.style.removeProperty('--mark-right');
 
     slidesEls = Array.prototype.slice.call(stage.querySelectorAll('.slide'));
     idx = 0;
