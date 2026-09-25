@@ -564,6 +564,8 @@ window.BS = window.BS || {};
     viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
     if (deckBackBtn) deckBackBtn.hidden = !allowEdit;
     if (deckEditEntryBtn) deckEditEntryBtn.hidden = allowEdit || !BS.listing || !BS.listing.id;
+    var saveLinkBtn = document.getElementById('deckSaveLinkBtn');
+    if (saveLinkBtn) saveLinkBtn.hidden = !allowEdit;
     if (window.BSDeck) window.BSDeck.render(BS.listing);
     if (window.BSI18n) window.BSI18n.apply();
   }
@@ -781,6 +783,55 @@ window.BS = window.BS || {};
     }
   }
 
+  /* ---------------- Save my edit link ----------------
+     "Мои презентации" only lives in this browser. This hands the agent
+     their private /edit/<id>?t=<token> link to keep somewhere of their own
+     — Telegram/WhatsApp open with the message ready to send (to
+     "Избранное" / themselves); MAX has no web share URL, so it goes
+     through the phone's own share sheet (navigator.share), which lists MAX
+     when it's installed. Opening that link later lands straight in the
+     presentation, no phone number needed. */
+  function editLinkFor(listing) {
+    var token = (listing && listing.editToken) || currentEditToken;
+    if (!listing || !listing.id || !token) return null;
+    return location.origin + '/edit/' + listing.id + '?t=' + encodeURIComponent(token);
+  }
+
+  function copyText(text, onDone) {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onDone, function () { window.prompt(t('shareCopyManual'), text); });
+    } else {
+      window.prompt(t('shareCopyManual'), text);
+    }
+  }
+
+  function showSaveEditLink() {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    var listing = BS.listing;
+    var url = editLinkFor(listing);
+    if (!url) {
+      showInfoModal(listing && listing._persistError ? t('finalizeSaveFailed') : t('finalizeStillSaving'));
+      return;
+    }
+    var message = t('saveLinkShareText', { title: listing.title || t('myListingsUntitled') });
+    var buttons = [
+      { label: 'Telegram', onClick: function () { window.open('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(message), '_blank', 'noopener'); } },
+      { label: 'WhatsApp', onClick: function () { window.open('https://wa.me/?text=' + encodeURIComponent(message + '\n' + url), '_blank', 'noopener'); } },
+    ];
+    if (navigator.share) {
+      buttons.push({ label: t('saveLinkMax'), onClick: function () {
+        navigator.share({ title: message, text: message, url: url }).catch(function () { /* cancelled */ });
+      } });
+    }
+    buttons.push({ label: t('saveLinkCopy'), onClick: function () { copyText(url, function () { showInfoModal(t('saveLinkCopied')); }); } });
+    buttons.push({ label: t('finalizeBlockedClose'), primary: true });
+    showFinalizeModal(t('saveLinkMessage'), buttons);
+  }
+
+  var deckSaveLinkBtn = document.getElementById('deckSaveLinkBtn');
+  if (deckSaveLinkBtn) deckSaveLinkBtn.addEventListener('click', showSaveEditLink);
+
   /* Called by js/deck.js once the PDF file has been handed to the browser:
      says where the file went and that the presentation itself is safe and
      how to get back to it — the agent stays right on it either way. */
@@ -788,6 +839,7 @@ window.BS = window.BS || {};
     var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
     var listing = BS.listing;
     var buttons = [];
+    if (editLinkFor(listing)) buttons.push({ label: t('deckSaveLinkBtn'), onClick: showSaveEditLink });
     if (listing && listing.id) buttons.push({ label: t('pdfSavedCopyLink'), onClick: function () { copyClientLink(listing); } });
     buttons.push({ label: t('pdfSavedBack'), primary: true });
     showFinalizeModal(t('pdfSavedMessage'), buttons);

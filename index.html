@@ -609,6 +609,8 @@
          requestEditAccess/editGateModal wiring in js/app.js. -->
     <a href="#" class="deck-edit-entry" id="deckEditEntry" data-i18n="deckEditEntryBtn" hidden>Это моя презентация — исправить →</a>
     <div class="deck-actions">
+      <!-- Agent's own views only (hidden on the public /p/<id>) — see showPreview in js/app.js -->
+      <button type="button" class="deck-action-btn deck-action-accent" id="deckSaveLinkBtn" data-i18n="deckSaveLinkBtn" hidden>Сохранить ссылку для себя</button>
       <button type="button" class="deck-action-btn" id="deckShareBtn" data-i18n="deckShareBtn">Поделиться</button>
       <button type="button" class="deck-action-btn" id="deckPdfBtn" data-i18n="deckPdfBtn">Скачать PDF</button>
     </div>
@@ -649,11 +651,11 @@
        /api/listings/:id/edit-auth) — not just clicking a button. -->
   <div class="modal-overlay" id="editGateModal" hidden>
     <div class="modal-box" role="dialog" aria-modal="true">
-      <p class="modal-message" data-i18n="editGateMessage">Чтобы редактировать эту презентацию, подтвердите номер телефона агента, указанный при её создании.</p>
+      <p class="modal-message" data-i18n="editGateMessage">Чтобы редактировать презентацию, откройте вашу личную ссылку для редактирования (из «Моих презентаций» или из сообщения, сохранённого себе). Для старых презентаций можно ввести номер телефона агента.</p>
       <div class="field">
         <label for="editGatePhone" data-i18n="editGatePhoneLabel">Номер телефона</label>
         <input type="tel" id="editGatePhone" data-i18n-placeholder="fAgentPhonePh" placeholder="+7 900 000-00-00">
-        <span class="field-inline-error" id="editGatePhoneError" data-i18n="editGateError">Неверный номер телефона. Попробуйте ещё раз.</span>
+        <span class="field-inline-error" id="editGatePhoneError" data-i18n="editGateError">Номер не подошёл. Новые презентации открываются только по вашей личной ссылке для редактирования — найдите её в «Моих презентациях» на главной странице или в сообщении, которое вы сохранили себе в Telegram, WhatsApp или MAX.</span>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-primary" id="editGateSubmit" data-i18n="editGateSubmitBtn">Подтвердить</button>

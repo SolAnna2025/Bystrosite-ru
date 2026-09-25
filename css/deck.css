@@ -509,7 +509,11 @@
    just "the window sizes tested." Bottom-right was tried instead and
    rejected — it collides with the QR codes on the final contact slide, a
    worse conflict than this one. */
-.deck-actions { position: fixed; right: 28px; top: 145px; z-index: 50; display: flex; gap: 10px; }
+.deck-actions {
+  position: fixed; right: 28px; top: 145px; z-index: 50; display: flex; gap: 10px;
+  flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 56px);
+}
+.deck-action-btn.deck-action-accent { background: rgba(176, 138, 76, 0.92); border-color: rgba(242, 239, 232, 0.5); color: #fff; }
 .deck-action-btn {
   appearance: none; cursor: pointer;
   background: rgba(23, 22, 15, 0.68); border: 1px solid rgba(242, 239, 232, 0.3); border-radius: 999px;

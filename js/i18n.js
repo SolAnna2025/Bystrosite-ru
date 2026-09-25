@@ -195,10 +195,10 @@ window.BSI18n = (function () {
       pdfMapFallback: 'Интерактивная карта доступна в веб-версии презентации',
       deckNavAria: 'Навигация по слайдам',
 
-      editGateMessage: 'Чтобы редактировать эту презентацию, подтвердите номер телефона агента, указанный при её создании.',
+      editGateMessage: 'Чтобы редактировать презентацию, откройте вашу личную ссылку для редактирования (из «Моих презентаций» или из сообщения, сохранённого себе). Для старых презентаций можно ввести номер телефона агента.',
       editGatePhoneLabel: 'Номер телефона',
       editGateSubmitBtn: 'Подтвердить',
-      editGateError: 'Неверный номер телефона. Попробуйте ещё раз.',
+      editGateError: 'Номер не подошёл. Новые презентации открываются только по вашей личной ссылке для редактирования — найдите её в «Моих презентациях» на главной странице или в сообщении, которое вы сохранили себе в Telegram, WhatsApp или MAX.',
 
       finalizeBlockedClose: 'Закрыть',
       finalizeStillSaving: 'Презентация ещё сохраняется, подождите пару секунд и попробуйте снова.',
@@ -214,6 +214,12 @@ window.BSI18n = (function () {
       pdfSavedMessage: 'PDF готов. Файл сохранён в «Загрузки» (на iPhone: приложение «Файлы» → «Загрузки»; на Android: «Файлы» → «Загрузки»). Презентация сохранена: вернуться к ней можно в любой момент — главная страница → «Мои презентации».',
       pdfSavedCopyLink: 'Скопировать ссылку для клиента',
       pdfSavedBack: 'Вернуться к презентации',
+      deckSaveLinkBtn: 'Сохранить ссылку для себя',
+      saveLinkMessage: 'Это ваша личная ссылка для редактирования — по ней презентация откроется сразу, с любого телефона или компьютера. Отправьте её себе (например, в «Избранное»). Клиентам её не отправляйте — для них кнопка «Поделиться».',
+      saveLinkShareText: 'Моя презентация «{title}» — ссылка для редактирования (только для меня):',
+      saveLinkMax: 'MAX и другие',
+      saveLinkCopy: 'Скопировать ссылку',
+      saveLinkCopied: 'Ссылка скопирована. Вставьте её себе в любой мессенджер или заметки.',
 
       deckPrevAria: 'Предыдущий слайд',
       deckNextAria: 'Следующий слайд',
@@ -574,10 +580,10 @@ window.BSI18n = (function () {
       pdfMapFallback: 'The interactive map is available in the web version of the presentation',
       deckNavAria: 'Slide navigation',
 
-      editGateMessage: 'To edit this presentation, confirm the agent phone number it was created with.',
+      editGateMessage: 'To edit this presentation, open your personal edit link (from My presentations, or the message you saved to yourself). For older presentations you can enter the agent phone number.',
       editGatePhoneLabel: 'Phone number',
       editGateSubmitBtn: 'Confirm',
-      editGateError: 'Incorrect phone number. Please try again.',
+      editGateError: 'That number didn’t work. New presentations open only with your personal edit link — find it under My presentations on the home page, or in the message you saved to yourself in Telegram, WhatsApp or MAX.',
 
       finalizeBlockedClose: 'Close',
       finalizeStillSaving: 'The presentation is still saving — wait a couple seconds and try again.',
@@ -593,6 +599,12 @@ window.BSI18n = (function () {
       pdfSavedMessage: 'Your PDF is ready. The file is in Downloads (iPhone: Files app → Downloads; Android: Files → Downloads). The presentation is saved — you can come back to it any time: home page → My presentations.',
       pdfSavedCopyLink: 'Copy link for the client',
       pdfSavedBack: 'Back to the presentation',
+      deckSaveLinkBtn: 'Save my edit link',
+      saveLinkMessage: 'This is your personal edit link — it opens the presentation straight away, from any phone or computer. Send it to yourself (e.g. Saved Messages). Don’t send it to clients — use Share for them.',
+      saveLinkShareText: 'My presentation "{title}" — edit link (for me only):',
+      saveLinkMax: 'MAX and others',
+      saveLinkCopy: 'Copy link',
+      saveLinkCopied: 'Link copied. Paste it into any messenger or notes.',
 
       deckPrevAria: 'Previous slide',
       deckNextAria: 'Next slide',
