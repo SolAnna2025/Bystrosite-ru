@@ -173,6 +173,16 @@
    ============================================================ */
 .slide-emotion .slide-pad { align-items: center; justify-content: center; text-align: center; }
 .slide-emotion .ed-phrase { font-size: 56px; }
+/* Full description under the phrase (see descriptionHtml in js/deck.js):
+   a stronger scrim keeps body text readable on any photo. */
+.slide-emotion.has-desc .ph-scrim-full { background: rgba(12, 11, 9, 0.5); }
+.slide-emotion.has-desc .ed-phrase { margin: 0 0 40px; }
+.emo-desc { max-width: 1300px; font-family: var(--font-body); color: #f2efe8; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35); }
+.emo-desc p { margin: 0 0 0.7em; }
+.emo-desc p:last-child { margin-bottom: 0; }
+.emo-desc-lg { font-size: 34px; line-height: 1.55; }
+.emo-desc-md { font-size: 28px; line-height: 1.55; }
+.emo-desc-sm { font-size: 22px; line-height: 1.55; max-width: 1500px; }
 
 /* ---------------- Ken Burns (slow zoom on Cover / Emotion / Final) ----------------
    Armed from JS (armKenBurns() in js/deck.js), not from a CSS class selector:
@@ -345,6 +355,7 @@
    9 — Conditions: price + a quiet costs block
    ============================================================ */
 .slide-conditions { background: var(--color-bg); }
+
 .cond-body { display: flex; gap: 120px; align-items: flex-start; margin-top: 40px; }
 .cond-price { display: flex; flex-direction: column; gap: 28px; }
 .cond-price-row { display: flex; flex-direction: column; gap: 4px; }

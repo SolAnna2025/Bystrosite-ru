@@ -109,9 +109,20 @@ window.BSDeck = (function () {
     };
   }
 
+  /* The full description sits on slide 2 (Emotion), under the phrase, so
+     slide 3 (Living) is left for the detailed spec list. Font size steps
+     down with length so even a long text stays inside the 1920x1080 frame. */
+  function descriptionHtml(l) {
+    var text = (l.description || '').trim();
+    if (!text) return '';
+    var words = text.split(/\s+/).length;
+    var size = words <= 60 ? 'emo-desc-lg' : words <= 110 ? 'emo-desc-md' : 'emo-desc-sm';
+    var paragraphs = text.split(/\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
+    return '<div class="emo-desc ' + size + '">' + paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>';
+  }
+
   function slideLiving(l, n) {
     var photo = getPhoto(l, 'living');
-    var body = wordCap(l.description, 18);
     var specs = [];
     if (l.houseArea != null) specs.push({ label: t('deckSpecHouse'), value: l.houseArea + ' ' + t('unitSqm') });
     if (l.plotArea != null) specs.push({ label: t('deckSpecPlot'), value: l.plotArea + ' ' + t('unitSqm') });
@@ -142,7 +153,6 @@ window.BSDeck = (function () {
         '<div class="living-text">' +
           '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckSpaceKicker')) + '</span>' +
           '<h2 class="ed-title ed-title-md ed-title-2l">' + esc(t('deckSpaceTitleL1')) + '<br>' + esc(t('deckSpaceTitleL2')) + '</h2>' +
-          (body ? '<p class="ed-body">' + esc(body) + '</p>' : '') +
           '<div class="spec-grid">' + specRows + '</div>' +
           (l.extraFeatures ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckExtraLabel')) + '</span><p>' + esc(l.extraFeatures) + '</p></div>' : '') +
         '</div>',
@@ -152,13 +162,15 @@ window.BSDeck = (function () {
   function slideEmotion(l, n, total) {
     var photo = getPhoto(l, 'emotion');
     var phrase = (l.emotionPhrase || '').trim();
+    var desc = descriptionHtml(l);
     return {
       label: t('deckEmotionLabel'),
-      cls: 'slide-emotion slide-on-photo',
+      cls: 'slide-emotion slide-on-photo' + (desc ? ' has-desc' : ''),
       html:
         '<div class="ph-media" style="position:absolute;inset:0">' + media(photo, l.title) + '<div class="ph-scrim-full"></div><div class="ph-scrim-bottom"></div></div>' +
         '<div class="slide-pad">' +
           (phrase ? '<p class="ed-phrase">' + esc(phrase) + '</p>' : '') +
+          desc +
         '</div>' +
         pageNumber(n, total),
     };
