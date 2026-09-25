@@ -109,9 +109,11 @@ window.BSDeck = (function () {
     };
   }
 
-  /* The full description sits on slide 2 (Emotion), under the phrase, so
-     slide 3 (Living) is left for the detailed spec list. Font size steps
-     down with length so even a long text stays inside the 1920x1080 frame. */
+  /* With a description, slide 2 (Emotion) takes the same half-screen
+     format as slide 3 (Living) — photo on one half, text on the other,
+     mirrored so the two don't read as a repeat — and slide 3 is left for
+     the detailed spec list. The description is shown in full; font size
+     steps down with length so even a long text stays inside the frame. */
   function descriptionHtml(l) {
     var text = (l.description || '').trim();
     if (!text) return '';
@@ -163,14 +165,26 @@ window.BSDeck = (function () {
     var photo = getPhoto(l, 'emotion');
     var phrase = (l.emotionPhrase || '').trim();
     var desc = descriptionHtml(l);
+    if (desc) {
+      return {
+        label: t('deckEmotionLabel'),
+        cls: 'slide-emotion slide-emotion-split',
+        html:
+          '<div class="emo-text">' +
+            '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(l.title) + '</span>' +
+            (phrase ? '<h2 class="ed-title ed-title-md ed-title-2l">' + esc(phrase) + '</h2>' : '') +
+            desc +
+          '</div>' +
+          '<div class="ph-media">' + media(photo, l.title) + '</div>',
+      };
+    }
     return {
       label: t('deckEmotionLabel'),
-      cls: 'slide-emotion slide-on-photo' + (desc ? ' has-desc' : ''),
+      cls: 'slide-emotion slide-on-photo',
       html:
         '<div class="ph-media" style="position:absolute;inset:0">' + media(photo, l.title) + '<div class="ph-scrim-full"></div><div class="ph-scrim-bottom"></div></div>' +
         '<div class="slide-pad">' +
           (phrase ? '<p class="ed-phrase">' + esc(phrase) + '</p>' : '') +
-          desc +
         '</div>' +
         pageNumber(n, total),
     };

@@ -173,16 +173,19 @@
    ============================================================ */
 .slide-emotion .slide-pad { align-items: center; justify-content: center; text-align: center; }
 .slide-emotion .ed-phrase { font-size: 56px; }
-/* Full description under the phrase (see descriptionHtml in js/deck.js):
-   a stronger scrim keeps body text readable on any photo. */
-.slide-emotion.has-desc .ph-scrim-full { background: rgba(12, 11, 9, 0.5); }
-.slide-emotion.has-desc .ed-phrase { margin: 0 0 40px; }
-.emo-desc { max-width: 1300px; font-family: var(--font-body); color: #f2efe8; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35); }
+/* With a description: the Living slide's half-screen format, mirrored —
+   text column left, photo right (see slideEmotion in js/deck.js). */
+.slide-emotion-split { display: grid; grid-template-columns: 46% 54%; background: var(--color-bg); }
+.slide-emotion-split .emo-text {
+  display: flex; flex-direction: column; justify-content: center; gap: 28px;
+  padding: 90px 100px; min-width: 0;
+}
+.emo-desc { font-family: var(--font-body); color: var(--color-text); }
 .emo-desc p { margin: 0 0 0.7em; }
 .emo-desc p:last-child { margin-bottom: 0; }
-.emo-desc-lg { font-size: 34px; line-height: 1.55; }
-.emo-desc-md { font-size: 28px; line-height: 1.55; }
-.emo-desc-sm { font-size: 22px; line-height: 1.55; max-width: 1500px; }
+.emo-desc-lg { font-size: 26px; line-height: 1.6; }
+.emo-desc-md { font-size: 22px; line-height: 1.6; }
+.emo-desc-sm { font-size: 18px; line-height: 1.55; }
 
 /* ---------------- Ken Burns (slow zoom on Cover / Emotion / Final) ----------------
    Armed from JS (armKenBurns() in js/deck.js), not from a CSS class selector:
