@@ -260,6 +260,10 @@ window.BS = window.BS || {};
      required. sessionStorage (not localStorage) so "authorized" doesn't
      outlive the browser tab/session it was granted in. */
   var EDIT_AUTH_PREFIX = 'bs-edit-ok:';
+  // Declared up here, not with the rest of "My presentations" below:
+  // renderRoute() runs on load before that block, and storedEditToken()
+  // needs the key already set by then.
+  var MY_LISTINGS_KEY = 'bs-my-listings';
   var editGateModalEl = document.getElementById('editGateModal');
   var editGatePhoneEl = document.getElementById('editGatePhone');
   var editGatePhoneErrorEl = document.getElementById('editGatePhoneError');
@@ -315,6 +319,16 @@ window.BS = window.BS || {};
   function editTokenFromUrl() {
     var m = /[?&]t=([0-9a-f]+)/i.exec(location.search);
     return m ? m[1] : null;
+  }
+
+  // The edit_token this device already knows for a listing, from "Мои
+  // презентации" — so an /edit/<id> address that lost its ?t= (the
+  // "Редактировать" button on the public view, an old bookmark) still
+  // opens straight away here instead of asking for a phone number that
+  // token-protected listings no longer accept.
+  function storedEditToken(id) {
+    var item = readMyListings().filter(function (x) { return x.id === id; })[0];
+    return item && item.t ? item.t : null;
   }
 
   function currentView() {
@@ -467,6 +481,9 @@ window.BS = window.BS || {};
 
     if (view === 'edit') {
       var editId = editListingId();
+      if (!editTokenFromUrl() && storedEditToken(editId)) {
+        history.replaceState(null, '', '/edit/' + editId + '?t=' + storedEditToken(editId));
+      }
       if (!editAuthorized(editId)) {
         var urlToken = editTokenFromUrl();
         if (urlToken && lastFailedTokenAuth !== (editId + ':' + urlToken)) {
@@ -704,8 +721,6 @@ window.BS = window.BS || {};
      landing page and the form as "Мои презентации". localStorage, so it
      survives a crash or closed tab; wrapped in try/catch because it can
      be unavailable (private mode) and the site must work without it. */
-  var MY_LISTINGS_KEY = 'bs-my-listings';
-
   function readMyListings() {
     try {
       var list = JSON.parse(localStorage.getItem(MY_LISTINGS_KEY) || '[]');
@@ -1928,7 +1943,7 @@ window.BS = window.BS || {};
       // persistListing below). Read off currentEditToken, not the URL
       // directly — "← Редактировать" (deckBackBtn) navigates to
       // /new-listing first, which drops the ?t= query string.
-      editToken: existingId ? currentEditToken : null,
+      editToken: existingId ? (currentEditToken || storedEditToken(existingId)) : null,
       // Fixed server-side at creation only (see 0005_language_and_edit_lockdown.sql
       // — an update's PATCH body never includes this key) — sent on every
       // submit anyway since a *new* listing needs it from its very first save.
@@ -2089,7 +2104,10 @@ window.BS = window.BS || {};
         // this is the one moment the agent's browser learns their listing's
         // real edit secret, so it has to land in the address bar now or
         // it's gone (no login system to hand it back to them later).
-        history.replaceState(null, '', '/edit/' + data.id + (data.editToken ? '?t=' + data.editToken : ''));
+        // On a re-edit the server sends no token back — keep the one this
+        // tab already has, or the address bar loses ?t= and that link then
+        // asks for a phone number on any other tab or device.
+        history.replaceState(null, '', '/edit/' + data.id + (currentEditToken ? '?t=' + currentEditToken : ''));
       }
     }).catch(function (err) {
       settle();

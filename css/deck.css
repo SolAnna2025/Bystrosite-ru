@@ -173,9 +173,9 @@
    ============================================================ */
 .slide-emotion .slide-pad { align-items: center; justify-content: center; text-align: center; }
 .slide-emotion .ed-phrase { font-size: 56px; }
-/* With a description: the Living slide's half-screen format, mirrored —
-   text column left, photo right (see slideEmotion in js/deck.js). */
-.slide-emotion-split { display: grid; grid-template-columns: 46% 54%; background: var(--color-bg); }
+/* With a description: the Living slide's half-screen format — photo
+   left, text column right (see slideEmotion in js/deck.js). */
+.slide-emotion-split { display: grid; grid-template-columns: 54% 46%; background: var(--color-bg); }
 .slide-emotion-split .emo-text {
   display: flex; flex-direction: column; justify-content: center; gap: 28px;
   padding: 90px 100px; min-width: 0;

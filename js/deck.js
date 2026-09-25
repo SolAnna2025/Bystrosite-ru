@@ -110,8 +110,7 @@ window.BSDeck = (function () {
   }
 
   /* With a description, slide 2 (Emotion) takes the same half-screen
-     format as slide 3 (Living) — photo on one half, text on the other,
-     mirrored so the two don't read as a repeat — and slide 3 is left for
+     format as slide 3 (Living) — photo left, text right — and slide 3 is left for
      the detailed spec list. The description is shown in full; font size
      steps down with length so even a long text stays inside the frame. */
   function descriptionHtml(l) {
@@ -170,12 +169,12 @@ window.BSDeck = (function () {
         label: t('deckEmotionLabel'),
         cls: 'slide-emotion slide-emotion-split',
         html:
+          '<div class="ph-media">' + media(photo, l.title) + '</div>' +
           '<div class="emo-text">' +
             '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(l.title) + '</span>' +
             (phrase ? '<h2 class="ed-title ed-title-md ed-title-2l">' + esc(phrase) + '</h2>' : '') +
             desc +
-          '</div>' +
-          '<div class="ph-media">' + media(photo, l.title) + '</div>',
+          '</div>',
       };
     }
     return {
