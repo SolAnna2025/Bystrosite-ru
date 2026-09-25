@@ -147,18 +147,21 @@
 .ed-rule-full { width: 100%; height: 1px; background: var(--color-border); border: 0; margin: 0; }
 
 /* ---------------- Page chrome ---------------- */
+/* Same spot on every slide (added in buildSlides, js/deck.js), aligned
+   with the 100px content edge — never part of a slide's own heading. */
 .pg-number {
-  position: absolute; z-index: 3;
-  font-family: var(--font-body); font-size: 13px; font-weight: 600;
-  letter-spacing: 0.1em; color: var(--color-text-muted);
+  position: absolute; z-index: 3; left: 100px; top: 52px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  letter-spacing: 0.16em; color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
-.slide-on-photo .pg-number { color: rgba(242, 239, 232, 0.75); }
-.pg-number-br { right: 56px; bottom: 44px; }
-.pg-number-tl { left: 56px; top: 44px; }
+.slide-on-photo .pg-number,
+.slide-living .pg-number,
+.slide-emotion-split .pg-number { color: rgba(242, 239, 232, 0.85); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
 
 .slide-pad {
   position: relative; z-index: 2;
-  height: 100%; padding: 90px 100px;
+  height: 100%; padding: 130px 100px 90px; /* top clears the page number (.pg-number) */
   display: flex; flex-direction: column;
 }
 
@@ -229,7 +232,7 @@
    3 / 5 — Asymmetric two-photo spreads (architecture / outdoor)
    ============================================================ */
 .slide-split-a { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
-.slide-split-a .split-head { padding: 90px 100px 0; flex: none; }
+.slide-split-a .split-head { padding: 130px 100px 0; flex: none; }
 .slide-split-a .split-photos { display: flex; gap: 3px; flex: 1; margin-top: 28px; min-height: 0; }
 .slide-split-a .split-photos .ph-media { flex: 1; }
 /* Exactly two photos (the common case) keep the asymmetric hero ratio;
@@ -273,7 +276,7 @@
    ============================================================ */
 .slide-grid3 { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
 .slide-grid3 .grid3-head {
-  flex: none; padding: 90px 100px 0;
+  flex: none; padding: 130px 100px 0;
   display: flex; flex-direction: column; gap: 6px;
 }
 .slide-grid3 .grid3-photos { display: flex; gap: 3px; flex: 1; margin-top: 28px; min-height: 0; }
@@ -284,7 +287,7 @@
    Details when the listing has bedrooms/bathrooms > 0)
    ============================================================ */
 .slide-roomgrid { background: var(--color-bg); display: flex; flex-direction: column; height: 100%; }
-.slide-roomgrid .roomgrid-head { flex: none; padding: 90px 100px 0; }
+.slide-roomgrid .roomgrid-head { flex: none; padding: 130px 100px 0; }
 .slide-roomgrid .roomgrid-photos {
   flex: 1; margin-top: 28px; min-height: 0;
   display: grid; grid-auto-rows: 1fr; gap: 8px;
@@ -445,7 +448,12 @@
 .cb-info { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
 .cb-name { font-family: var(--font-heading); font-size: 32px; }
 .cb-phone { font-size: 19px; letter-spacing: 0.02em; }
-.cb-validity { font-size: 12px; color: rgba(242, 239, 232, 0.55); margin-top: 4px; }
+/* "Действительна 1 месяц" — a quiet footnote in the slide's bottom-right
+   corner, not part of the agent's contact block. */
+.cf-validity {
+  position: absolute; z-index: 3; right: 100px; bottom: 30px;
+  font-size: 12px; letter-spacing: 0.04em; color: rgba(242, 239, 232, 0.55);
+}
 .cb-messengers { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .msg-pill {
   display: inline-block;

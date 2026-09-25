@@ -79,8 +79,8 @@ window.BSDeck = (function () {
     return '<div class="ph-placeholder"><span class="ph-placeholder-label">' + esc(t('photoPlaceholder')) + '</span></div>';
   }
 
-  function pageNumber(n, total, pos) {
-    return '<span class="pg-number ' + (pos || 'pg-number-br') + '">' + pad2(n) + ' / ' + pad2(total) + '</span>';
+  function pageNumber(n, total) {
+    return '<span class="pg-number">' + pad2(n) + ' / ' + pad2(total) + '</span>';
   }
 
   /* ---------------- Photos ---------------- */
@@ -104,8 +104,7 @@ window.BSDeck = (function () {
           '<div class="ed-kicker">' + esc(t('deckResidence')) + (city ? ' · ' + esc(city.toUpperCase()) : '') + '</div>' +
           '<h1 class="ed-title">' + esc(l.title) + '</h1>' +
           '<hr class="ed-rule">' +
-        '</div>' +
-        pageNumber(n, total),
+        '</div>',
     };
   }
 
@@ -152,7 +151,7 @@ window.BSDeck = (function () {
       html:
         '<div class="ph-media">' + media(photo, t('deckLivingAlt')) + '</div>' +
         '<div class="living-text">' +
-          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckSpaceKicker')) + '</span>' +
+          '<span class="ed-kicker">' + esc(t('deckSpaceKicker')) + '</span>' +
           '<h2 class="ed-title ed-title-md ed-title-2l">' + esc(t('deckSpaceTitleL1')) + '<br>' + esc(t('deckSpaceTitleL2')) + '</h2>' +
           '<div class="spec-grid">' + specRows + '</div>' +
           (l.extraFeatures ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckExtraLabel')) + '</span><p>' + esc(l.extraFeatures) + '</p></div>' : '') +
@@ -171,7 +170,7 @@ window.BSDeck = (function () {
         html:
           '<div class="ph-media">' + media(photo, l.title) + '</div>' +
           '<div class="emo-text">' +
-            '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(l.title) + '</span>' +
+            '<span class="ed-kicker">' + esc(l.title) + '</span>' +
             (phrase ? '<h2 class="ed-title ed-title-md ed-title-2l">' + esc(phrase) + '</h2>' : '') +
             desc +
           '</div>',
@@ -184,8 +183,7 @@ window.BSDeck = (function () {
         '<div class="ph-media" style="position:absolute;inset:0">' + media(photo, l.title) + '<div class="ph-scrim-full"></div><div class="ph-scrim-bottom"></div></div>' +
         '<div class="slide-pad">' +
           (phrase ? '<p class="ed-phrase">' + esc(phrase) + '</p>' : '') +
-        '</div>' +
-        pageNumber(n, total),
+        '</div>',
     };
   }
 
@@ -202,7 +200,7 @@ window.BSDeck = (function () {
       label: t('deckArchitectureLabel'),
       cls: 'slide-split-a',
       html:
-        '<div class="split-head"><span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckArchitectureLabel')) + '</span></div>' +
+        '<div class="split-head"><span class="ed-kicker">' + esc(t('deckArchitectureLabel')) + '</span></div>' +
         '<div class="split-photos split-photos-' + shown.length + '">' + photosHtml + '</div>',
     };
   }
@@ -255,7 +253,7 @@ window.BSDeck = (function () {
       cls: 'slide-conditions',
       html:
         '<div class="slide-pad">' +
-          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(communityLabel) + '</span>' +
+          '<span class="ed-kicker">' + esc(communityLabel) + '</span>' +
           (specRows ? '<div class="spec-grid">' + specRows + '</div>' : '') +
           (l.infrastructure ? '<div class="extra-features"><span class="ef-label">' + esc(t('deckInfrastructureLabel')) + '</span><p>' + esc(l.infrastructure) + '</p></div>' : '') +
           (communityText ? '<div class="extra-features"><span class="ef-label">' + esc(communityTextLabel) + '</span><p>' + esc(communityText) + '</p></div>' : '') +
@@ -287,7 +285,7 @@ window.BSDeck = (function () {
       label: kicker,
       cls: 'slide-split-a',
       html:
-        '<div class="split-head"><span class="ed-kicker">' + pad2(n) + ' — ' + esc(kicker) + '</span></div>' +
+        '<div class="split-head"><span class="ed-kicker">' + esc(kicker) + '</span></div>' +
         '<div class="split-photos split-photos-' + items.length + '">' + photosHtml + '</div>',
     };
   }
@@ -300,7 +298,7 @@ window.BSDeck = (function () {
       cls: 'slide-grid3',
       html:
         '<div class="grid3-head">' +
-          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckDetailsLabel')) + '</span>' +
+          '<span class="ed-kicker">' + esc(t('deckDetailsLabel')) + '</span>' +
         '</div>' +
         '<div class="grid3-photos">' +
           '<div class="ph-media">' + media(a, alt) + '</div>' +
@@ -329,7 +327,7 @@ window.BSDeck = (function () {
       label: groupTitle,
       cls: 'slide-roomgrid',
       html:
-        '<div class="roomgrid-head"><span class="ed-kicker">' + pad2(n) + ' — ' + esc(groupTitle) + '</span></div>' +
+        '<div class="roomgrid-head"><span class="ed-kicker">' + esc(groupTitle) + '</span></div>' +
         '<div class="roomgrid-photos" style="grid-template-columns:repeat(' + cols + ',1fr)">' + items + '</div>',
     };
   }
@@ -363,7 +361,7 @@ window.BSDeck = (function () {
       label: t('deckInteriorsLabel'),
       cls: 'slide-roomgrid',
       html:
-        '<div class="roomgrid-head"><span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckInteriorsLabel')) + '</span></div>' +
+        '<div class="roomgrid-head"><span class="ed-kicker">' + esc(t('deckInteriorsLabel')) + '</span></div>' +
         '<div class="roomgrid-photos" style="grid-template-columns:repeat(' + cols + ',1fr)">' + items + '</div>',
     };
   }
@@ -422,7 +420,7 @@ window.BSDeck = (function () {
            iframe always has its true, final size the moment it starts loading. */
         '<div class="loc-map"><iframe data-src="' + esc(mapSrc) + '" title="' + esc(t('deckMapTitle')) + '" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>' +
         '<div class="loc-text">' +
-          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckLocationLabel')) + '</span>' +
+          '<span class="ed-kicker">' + esc(t('deckLocationLabel')) + '</span>' +
           '<h2 class="ed-title ed-title-md ed-title-2l" style="margin-top:10px">' + esc(l.locationName) + '</h2>' +
           '<div class="loc-coords">' + esc(String(l.lat)) + ', ' + esc(String(l.lng)) + '</div>' +
           (rows ? '<div class="loc-nearby-list">' + rows + '</div>' : '') +
@@ -493,7 +491,7 @@ window.BSDeck = (function () {
       cls: 'slide-conditions',
       html:
         '<div class="slide-pad">' +
-          '<span class="ed-kicker">' + pad2(n) + ' — ' + esc(t('deckConditionsLabel')) + '</span>' +
+          '<span class="ed-kicker">' + esc(t('deckConditionsLabel')) + '</span>' +
           '<div class="cond-body">' +
             '<div class="cond-price">' + rows + '</div>' +
             (costs ? '<div class="cond-costs"><div class="cc-title">' + esc(t('deckMonthly')) + '</div>' + costs + '</div>' : '') +
@@ -530,7 +528,6 @@ window.BSDeck = (function () {
         '<div class="cf-photo-area">' +
           '<div class="ph-media" style="position:absolute;inset:0">' + media(getPhoto(l, 'final'), l.title + t('deckEveningSuffix')) + '<div class="ph-scrim-bottom"></div></div>' +
           (closing ? '<div class="cf-phrase-wrap"><p class="ed-phrase">' + esc(closing) + '</p></div>' : '') +
-          pageNumber(n, total, 'pg-number-tl') +
         '</div>' +
         '<div class="contact-bar">' +
           '<div class="cb-photo">' +
@@ -542,10 +539,10 @@ window.BSDeck = (function () {
             (agentName ? '<span class="cb-name">' + esc(agentName) + '</span>' : '') +
             (agentPhone ? '<span class="cb-phone">' + esc(agentPhone) + '</span>' : '') +
             (msgPillsHtml ? '<div class="cb-messengers">' + msgPillsHtml + '</div>' : '') +
-            '<span class="cb-validity">' + esc(t('deckValidityNote')) + '</span>' +
           '</div>' +
           (qrsHtml ? '<div class="cb-qrs">' + qrsHtml + '</div>' : '') +
-        '</div>',
+        '</div>' +
+        '<span class="cf-validity">' + esc(t('deckValidityNote')) + '</span>',
     };
   }
 
@@ -581,6 +578,11 @@ window.BSDeck = (function () {
       slideConditions(l, ++n),
       slideFinal(l, ++n, total)
     );
+    // Page number: one fixed spot, top-left, on every slide — never part of
+    // a slide's own heading. Light over a photo, muted over the page colour.
+    slides.forEach(function (s, i) {
+      s.html += pageNumber(i + 1, slides.length);
+    });
     return slides;
   }
 
