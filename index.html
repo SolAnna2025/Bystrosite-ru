@@ -213,7 +213,7 @@
 
         <section class="field-group">
           <h2 data-i18n="secLocationTitle">Локация</h2>
-          <p class="field-group-hint" data-i18n="secLocationHint">Необязательно. Адрес и координаты — по ним построим карту на слайде локации; если координаты не указаны (обе широта и долгота), слайд локации в презентации не появится</p>
+          <p class="field-group-hint" data-i18n="secLocationHint">Необязательно. Адрес и координаты — по ним построим карту на слайде локации; если координаты не указаны, слайд локации в презентации не появится</p>
           <div class="field-row">
             <div class="field span-2">
               <div class="field-label-row">
@@ -227,25 +227,13 @@
             <div class="field span-2">
               <!-- Label/hint keys swap to the Google variants for non-Russian
                    countries — see syncMapProviderHints() in js/app.js. -->
-              <label for="fCoordsPaste" id="fCoordsPasteLabel" data-i18n="fCoordsPasteLabel">Вставить координаты из Яндекс.Карт</label>
+              <label for="fCoordsPaste" id="fCoordsPasteLabel" data-i18n="fCoordsPasteLabel">Координаты или ссылка из Яндекс.Карт</label>
               <input type="text" id="fCoordsPaste" placeholder="напр. 43.5397321, 39.8944543" data-i18n-placeholder="fCoordsPastePh">
-              <span class="field-note" id="fCoordsPasteHint" data-i18n="fCoordsPasteHint">В Яндекс.Картах: щёлкните правой кнопкой по нужной точке на карте → «Что здесь» → скопируйте появившиеся координаты и вставьте сюда, поля ниже заполнятся сами</span>
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <div class="field-label-row">
-                <label for="fLat" data-i18n="fLatLabel">Широта (lat)</label>
-                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
-              </div>
-              <input type="number" id="fLat" step="any" placeholder="43.5397">
-            </div>
-            <div class="field">
-              <div class="field-label-row">
-                <label for="fLng" data-i18n="fLngLabel">Долгота (lng)</label>
-                <span class="field-flag field-flag-optional" data-i18n="fieldFlagOptional">Необязательное поле</span>
-              </div>
-              <input type="number" id="fLng" step="any" placeholder="39.8944">
+              <!-- Parsed lat/lng live here, hidden: the one paste field above is the only input. -->
+              <input type="hidden" id="fLat">
+              <input type="hidden" id="fLng">
+              <span class="coords-status" id="fCoordsStatus" aria-live="polite"></span>
+              <span class="field-note" id="fCoordsPasteHint" data-i18n="fCoordsPasteHint">В Яндекс.Картах: щёлкните правой кнопкой по нужной точке на карте → «Что здесь» → скопируйте появившиеся координаты и вставьте сюда. С телефона: откройте точку в приложении → «Поделиться» → скопируйте ссылку и вставьте её сюда</span>
             </div>
           </div>
         </section>

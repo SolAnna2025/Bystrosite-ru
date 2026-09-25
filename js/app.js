@@ -708,57 +708,122 @@ window.BS = window.BS || {};
     });
   });
 
-  /* ---------------- Coordinates paste (Yandex Maps) ---------------- */
-  /* Yandex Maps' own "Что здесь" popup puts a single "lat, lng" string on
-     the clipboard — but the form asks for lat/lng in two separate fields,
-     so an agent had to split that string by hand. This field accepts that
-     string (or a shared Yandex Maps link with an ll= or pt= segment — note
-     those two take lon,lat, the reverse of everywhere else here, same as
-     in js/deck.js slideLocation) and fills fLat/fLng itself. Google Maps
-     link formats (@lat,lng / ?q=lat,lng / !3dlat!4dlng) are still accepted
-     too, in case an agent pastes one out of habit. Never required — plain
-     manual entry into fLat/fLng still works exactly as before. */
+  /* ---------------- Coordinates paste (Yandex / Google Maps) ----------------
+     The single place an agent gives the property's location: fLat/fLng
+     are hidden inputs filled from whatever gets pasted here, and the
+     status line below the field confirms what was understood (or says it
+     wasn't). Accepted: a plain "lat, lng" pair (dot or comma decimals),
+     degrees-minutes-seconds (43°32'23"N 39°53'40"E / с. ш. в. д.), full
+     Yandex links (whatshere/pt/ll — lon,lat order, the reverse of
+     everywhere else here, same as js/deck.js slideLocation) and Google
+     links (!3d!4d pin, @lat,lng, q=/query=/ll=). Short "Share" links from
+     the phone apps carry no coordinates at all — those go through the
+     server's /api/resolve-map-link, which follows the redirect. */
   var fCoordsPasteEl = document.getElementById('fCoordsPaste');
+  var fCoordsStatusEl = document.getElementById('fCoordsStatus');
   var fLatEl = document.getElementById('fLat');
   var fLngEl = document.getElementById('fLng');
 
+  var NUM = '(' + /-?\d+(?:\.\d+)?/.source + ')';
+
   function parseCoordsInput(text) {
-    text = String(text || '').trim();
+    text = String(text || '').trim().replace(/%2C/gi, ',').replace(/%5B/gi, '[').replace(/%5D/gi, ']');
     if (!text) return null;
+    var m;
 
-    var m = text.match(/[?&]ll=(-?\d+(?:\.\d+)?)(?:,|%2C)(-?\d+(?:\.\d+)?)/i) ||
-      text.match(/[?&]pt=(-?\d+(?:\.\d+)?)(?:,|%2C)(-?\d+(?:\.\d+)?)/i);
-    if (m) return toLatLng(m[2], m[1]); // ll=/pt= are lon,lat — swap to lat,lng
+    if (/yandex\.|ya\.ru/i.test(text)) {
+      m = text.match(new RegExp('whatshere\\[point\\]=' + NUM + ',' + NUM)) ||
+        text.match(new RegExp('[?&]pt=' + NUM + ',' + NUM)) ||
+        text.match(new RegExp('[?&]ll=' + NUM + ',' + NUM));
+      if (m) return toLatLng(m[2], m[1]); // Yandex is lon,lat — swap to lat,lng
+    }
 
-    m = text.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
-      text.match(/[?&]q=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
-      text.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+    // Google: !3d!4d is the dropped pin itself, @ is only the camera centre.
+    m = text.match(new RegExp('!3d' + NUM + '!4d' + NUM)) ||
+      text.match(new RegExp('[?&](?:q|query|ll|destination)=(?:loc:)?' + NUM + ',\\s*' + NUM)) ||
+      text.match(new RegExp('@' + NUM + ',\\s*' + NUM));
     if (m) return toLatLng(m[1], m[2]);
 
-    // Plain "43.5397321, 39.8944543" (optionally "43.5397321° N, 39.8944543° E").
-    var cleaned = text.replace(/[°′″'"NSEWnsew]/g, ' ').trim();
-    var parts = cleaned.split(cleaned.indexOf(',') !== -1 ? ',' : /\s+/)
+    var dms = parseDms(text);
+    if (dms) return dms;
+
+    // "43,5397321 39,8944543" / "43,5397; 39,8944" — decimal commas.
+    m = text.match(/^(-?\d+,\d+)\s*[;\s]\s*(-?\d+,\d+)$/);
+    if (m) return toLatLng(m[1].replace(',', '.'), m[2].replace(',', '.'));
+
+    // Plain "43.5397321, 39.8944543" (optionally with ° N / ° E).
+    var cleaned = text.replace(/[°NSEWnsew]/g, ' ').trim();
+    var parts = cleaned.split(cleaned.indexOf(',') !== -1 ? ',' : /[\s;]+/)
       .map(function (s) { return s.trim(); }).filter(Boolean);
     if (parts.length === 2) return toLatLng(parts[0], parts[1]);
     return null;
+  }
+
+  // 43°32'23.0"N 39°53'40.0"E, or Russian 43°32′23″ с. ш. 39°53′40″ в. д.
+  function parseDms(text) {
+    var re = /(\d+(?:[.,]\d+)?)\s*°\s*(?:(\d+(?:[.,]\d+)?)\s*['′’]\s*)?(?:(\d+(?:[.,]\d+)?)\s*(?:"|″|”|''|′′)\s*)?([NSEW]|[сю]\.?\s*ш\.?|[вз]\.?\s*д\.?)?/gi;
+    var found = [], m;
+    while ((m = re.exec(text)) && found.length < 2) {
+      var n = function (v) { return v ? Number(String(v).replace(',', '.')) : 0; };
+      var val = n(m[1]) + n(m[2]) / 60 + n(m[3]) / 3600;
+      var h = (m[4] || '').toLowerCase().replace(/[\s.]/g, '');
+      if (h === 's' || h === 'w' || h === 'юш' || h === 'зд') val = -val;
+      found.push({ val: val, h: h });
+    }
+    if (found.length !== 2) return null;
+    // Longitude first if the hemisphere letters say so.
+    if (/^(e|w|вд|зд)$/.test(found[0].h) && /^(n|s|сш|юш)$/.test(found[1].h)) found.reverse();
+    return toLatLng(found[0].val, found[1].val);
   }
 
   function toLatLng(latStr, lngStr) {
     var lat = Number(latStr), lng = Number(lngStr);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-    return { lat: lat, lng: lng };
+    if (lat === 0 && lng === 0) return null;
+    return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
+  }
+
+  function setCoords(coords) {
+    var t = window.BSI18n.t;
+    fLatEl.value = coords ? coords.lat : '';
+    fLngEl.value = coords ? coords.lng : '';
+    fCoordsStatusEl.className = 'coords-status' + (coords ? ' is-ok' : '');
+    fCoordsStatusEl.textContent = coords ? t('coordsOk', { lat: coords.lat, lng: coords.lng }) : '';
+  }
+
+  function coordsFail() {
+    setCoords(null);
+    fCoordsStatusEl.className = 'coords-status is-error';
+    fCoordsStatusEl.textContent = window.BSI18n.t('coordsFail');
+  }
+
+  var coordsRequestSeq = 0;
+  function handleCoordsPaste() {
+    var text = fCoordsPasteEl.value.trim();
+    var seq = ++coordsRequestSeq;
+    if (!text) { setCoords(null); return; }
+    var coords = parseCoordsInput(text);
+    if (coords) { setCoords(coords); return; }
+
+    // A link without coordinates in it (phone "Share" short link, or a
+    // place link) — let the server follow it.
+    var link = text.match(/https?:\/\/\S+/i);
+    if (!link) { coordsFail(); return; }
+    setCoords(null);
+    fCoordsStatusEl.textContent = window.BSI18n.t('coordsResolving');
+    fetch('/api/resolve-map-link?url=' + encodeURIComponent(link[0]))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (seq !== coordsRequestSeq) return; // the field changed meanwhile
+        var found = data && (parseCoordsInput(data.url) || (data.coords && toLatLng(data.coords.lat, data.coords.lng)));
+        if (found) setCoords(found); else coordsFail();
+      })
+      .catch(function () { if (seq === coordsRequestSeq) coordsFail(); });
   }
 
   if (fCoordsPasteEl) {
-    fCoordsPasteEl.addEventListener('input', function () {
-      var coords = parseCoordsInput(fCoordsPasteEl.value);
-      if (!coords) return;
-      fLatEl.value = coords.lat;
-      fLngEl.value = coords.lng;
-      fLatEl.style.borderColor = '';
-      fLngEl.style.borderColor = '';
-    });
+    fCoordsPasteEl.addEventListener('input', handleCoordsPaste);
   }
 
   /* Agent headshot only: this one ends up stored as a plain bytea column in
@@ -1403,8 +1468,9 @@ window.BS = window.BS || {};
     document.getElementById('fEmotionPhrase').value = listing.emotionPhrase || '';
     document.getElementById('fClosingPhrase').value = listing.closingPhrase || '';
     document.getElementById('fLocationName').value = listing.locationName || '';
-    document.getElementById('fLat').value = listing.lat != null ? listing.lat : '';
-    document.getElementById('fLng').value = listing.lng != null ? listing.lng : '';
+    var savedCoords = listing.lat != null && listing.lng != null ? { lat: listing.lat, lng: listing.lng } : null;
+    fCoordsPasteEl.value = savedCoords ? savedCoords.lat + ', ' + savedCoords.lng : '';
+    setCoords(savedCoords);
     document.getElementById('fCurrency').value = listing.currency || 'RUB';
     document.getElementById('fSalePrice').value = listing.salePrice != null ? listing.salePrice : '';
     document.getElementById('fRentPrice').value = listing.rentPrice != null ? listing.rentPrice : '';

@@ -341,6 +341,10 @@ figure { margin: 0; }
   font-size: 12px; line-height: 1.35; color: var(--color-text-muted);
 }
 .photo-add-count { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+.coords-status { display: block; font-size: 13px; margin-top: 6px; min-height: 0; }
+.coords-status:empty { display: none; }
+.coords-status.is-ok { color: #3f7a4a; }
+.coords-status.is-error { color: #b0443a; }
 .photo-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 10px; }
 .photo-bulk-status { font-size: 12px; color: var(--color-text-muted); }
 /* Long-press on a photo must start a drag, not the iOS "save image" callout. */

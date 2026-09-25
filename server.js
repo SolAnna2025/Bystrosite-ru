@@ -180,6 +180,65 @@ function handleStaticMap(req, res) {
   res.writeHead(404); res.end();
 }
 
+/* ---------------- Map share-link resolver ----------------
+   "Share" in the Yandex/Google Maps phone apps gives a short link
+   (yandex.ru/maps/-/…, maps.app.goo.gl/…) with no coordinates in it —
+   they only appear after the redirect, which the browser can't follow
+   cross-origin. This follows the redirects here and hands the final URL
+   back for js/app.js parseCoordsInput to read, plus (Yandex only) a
+   coordinate pair scraped from the page for links whose final URL has none.
+   Every hop must stay on a Yandex/Google maps host, so this can't be used
+   to make the server fetch arbitrary URLs. */
+const MAP_LINK_HOST_RE = /^(?:[a-z0-9-]+\.)*(?:yandex\.(?:ru|com|kz|by|uz|com\.tr)|ya\.ru|goo\.gl|google\.[a-z.]+)$/i;
+
+function isAllowedMapLink(u) {
+  return (u.protocol === 'https:' || u.protocol === 'http:') && MAP_LINK_HOST_RE.test(u.hostname);
+}
+
+/* Yandex only: an org/place card's "coordinates":[lon,lat]. Google pages
+   are deliberately not scraped — a place page without a pin in its URL
+   only carries a default camera picked from the requester's IP (checked:
+   "Eiffel Tower" fetched from here came back centred on Thailand), and a
+   wrong point is worse than asking the agent to paste coordinates. */
+function coordsFromMapPage(html, hostname) {
+  if (!/yandex\.|ya\.ru$/i.test(hostname)) return null;
+  const m = html.match(/"coordinates":\[(-?\d+\.\d+),(-?\d+\.\d+)\]/);
+  return m ? { lat: Number(m[2]), lng: Number(m[1]) } : null;
+}
+
+async function handleResolveMapLink(req, res) {
+  let current;
+  try {
+    current = new URL(new URL(req.url, 'http://localhost').searchParams.get('url') || '');
+  } catch (e) {
+    sendJson(res, 400, { error: 'bad_url' }); return;
+  }
+  if (!isAllowedMapLink(current)) { sendJson(res, 400, { error: 'not_a_map_link' }); return; }
+
+  try {
+    let html = '';
+    for (let hop = 0; hop < 6; hop++) {
+      const r = await fetch(current.href, {
+        redirect: 'manual',
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36', 'Accept-Language': 'ru,en' },
+        signal: AbortSignal.timeout(6000),
+      });
+      const location = r.status >= 300 && r.status < 400 ? r.headers.get('location') : null;
+      if (location) {
+        const next = new URL(location, current);
+        if (!isAllowedMapLink(next)) break;
+        current = next;
+        continue;
+      }
+      html = (await r.text()).slice(0, 2000000);
+      break;
+    }
+    sendJson(res, 200, { url: current.href, coords: html ? coordsFromMapPage(html, current.hostname) : null });
+  } catch (e) {
+    sendJson(res, 502, { error: 'fetch_failed' });
+  }
+}
+
 /* ---------------- Phone identity ----------------
    normalizePhone(): strip everything but digits, then keep only the last 10
    — so "+7 937 166-75-55", "89371667555" and "9371667555" all collapse to
@@ -898,6 +957,10 @@ const server = http.createServer((req, res) => {
     if (action === 'finalize' && req.method === 'POST') { handleListingFinalize(req, res, id); return; }
     if (action === 'edit-auth' && req.method === 'POST') { handleListingEditAuth(req, res, id); return; }
     if (action === 'view' && req.method === 'GET') { handlePublicListingView(req, res, id); return; }
+  }
+  if (req.method === 'GET' && req.url.split('?')[0] === '/api/resolve-map-link') {
+    handleResolveMapLink(req, res);
+    return;
   }
   if (req.method === 'GET' && req.url.split('?')[0] === '/api/static-map') {
     handleStaticMap(req, res);
