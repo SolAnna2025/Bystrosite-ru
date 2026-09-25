@@ -90,6 +90,9 @@
         <p data-i18n="landingSubtitle">Заполните карточку объекта — получите готовую презентацию в архитектурно-издательском стиле: интерактивная карта локации, калькулятор доходности от аренды, QR-коды для связи. Слайд за слайдом, как в примере ниже.</p>
       </div>
 
+      <!-- "Мои презентации" — this device's own listings, see renderMyListings() in js/app.js -->
+      <div class="my-listings" hidden></div>
+
       <div class="landing-thumbs" id="landingThumbs"><!-- thumbnails injected by js/deck.js --></div>
 
       <div class="landing-cta">
@@ -125,6 +128,8 @@
         <h1 data-i18n="formTitle">Новый объект</h1>
         <p data-i18n="formIntro">Заполните карточку объекта — мы соберём из неё готовую презентацию в стиле премиального шаблона. Поля уже заполнены примером, можно сразу нажать «Создать презентацию» и посмотреть результат.</p>
       </div>
+
+      <div class="my-listings" hidden></div>
 
       <div class="form-error-banner" id="formError" data-i18n="formErrorBanner">Проверьте отмеченные поля — часть обязательных данных не заполнена.</div>
 

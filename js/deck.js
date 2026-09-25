@@ -783,7 +783,13 @@ window.BSDeck = (function () {
         scale: 1, useCORS: true, backgroundColor: '#f6f1e7', logging: false,
       });
     }).then(function (canvas) {
-      return canvas.toDataURL('image/jpeg', 0.72);
+      var jpeg = canvas.toDataURL('image/jpeg', 0.72);
+      // Free the bitmap right away: a phone browser (iOS Safari especially)
+      // has a hard cap on total canvas memory, and 12+ full-HD slides left
+      // waiting for garbage collection is enough to crash the tab mid-PDF.
+      canvas.width = 0;
+      canvas.height = 0;
+      return jpeg;
     });
   }
 
@@ -1004,6 +1010,7 @@ window.BSDeck = (function () {
       buildPdfDocument().then(function (doc) {
         var name = (currentListing && currentListing.title ? currentListing.title : 'presentation').replace(/[\\/:*?"<>|]+/g, ' ').trim();
         doc.save((name || 'presentation') + '.pdf');
+        if (window.BS && window.BS.afterPdfSaved) window.BS.afterPdfSaved();
       }, function (err) {
         console.error('PDF generation failed:', err);
         window.alert(t('deckPdfError'));

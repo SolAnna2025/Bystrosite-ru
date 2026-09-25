@@ -366,6 +366,7 @@ window.BS = window.BS || {};
       if (renderLoadFailure(stageEl, listing)) return;
       BS.listing = listing;
       editAuthorizedListingId = id; // only reached once editAuthorized(id) already passed once — see its definition
+      rememberMyListing(listing, currentEditToken || editTokenFromUrl());
       // The agent's own working language for this edit session follows the
       // listing's own stored language (persisted — this becomes the active
       // language for the form too if they go on to "← Редактировать").
@@ -691,21 +692,110 @@ window.BS = window.BS || {};
     navigate('/edit/' + BS.listing.id);
   });
 
+  /* ---------------- My presentations (this device) ----------------
+     There's no login: the only way back into a listing is its
+     /edit/<id>?t=<token> address, which used to live nowhere but the
+     address bar — one crashed tab (a phone running out of memory while
+     building the PDF) and it was gone. Every listing this browser creates
+     or opens for editing is remembered here, the moment the server hands
+     back its id (before any download is even possible), and listed on the
+     landing page and the form as "Мои презентации". localStorage, so it
+     survives a crash or closed tab; wrapped in try/catch because it can
+     be unavailable (private mode) and the site must work without it. */
+  var MY_LISTINGS_KEY = 'bs-my-listings';
+
+  function readMyListings() {
+    try {
+      var list = JSON.parse(localStorage.getItem(MY_LISTINGS_KEY) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
+
+  function rememberMyListing(listing, token) {
+    if (!listing || !listing.id) return;
+    var list = readMyListings();
+    var prev = list.filter(function (x) { return x.id === listing.id; })[0] || {};
+    list = list.filter(function (x) { return x.id !== listing.id; });
+    list.unshift({ id: listing.id, t: token || prev.t || null, title: listing.title || prev.title || '', at: Date.now() });
+    try { localStorage.setItem(MY_LISTINGS_KEY, JSON.stringify(list.slice(0, 50))); } catch (e) { /* storage unavailable */ }
+    renderMyListings();
+  }
+
+  function renderMyListings() {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    var list = readMyListings();
+    var lang = window.BSI18n ? window.BSI18n.getLang() : 'ru';
+    document.querySelectorAll('.my-listings').forEach(function (box) {
+      box.innerHTML = '';
+      box.hidden = list.length === 0;
+      if (!list.length) return;
+      var h = document.createElement('h2');
+      h.className = 'my-listings-title';
+      h.textContent = t('myListingsTitle');
+      box.appendChild(h);
+      var ul = document.createElement('ul');
+      ul.className = 'my-listings-list';
+      list.forEach(function (item) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.className = 'my-listings-item';
+        // A real page load (no data-nav): renderRoute's /edit/<id> branch
+        // signs in with ?t= on its own, or asks for the agent's phone.
+        a.href = '/edit/' + encodeURIComponent(item.id) + (item.t ? '?t=' + encodeURIComponent(item.t) : '');
+        var name = document.createElement('span');
+        name.className = 'my-listings-name';
+        name.textContent = item.title || t('myListingsUntitled');
+        var date = document.createElement('span');
+        date.className = 'my-listings-date';
+        try {
+          date.textContent = new Date(item.at).toLocaleString(lang === 'en' ? 'en-GB' : 'ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        } catch (e) { date.textContent = ''; }
+        var open = document.createElement('span');
+        open.className = 'my-listings-open';
+        open.textContent = t('myListingsOpen');
+        a.appendChild(name);
+        a.appendChild(date);
+        a.appendChild(open);
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+      var note = document.createElement('p');
+      note.className = 'my-listings-note';
+      note.textContent = t('myListingsNote');
+      box.appendChild(note);
+    });
+  }
+
+  function copyClientLink(listing) {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    var url = location.origin + '/p/' + listing.id;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        showInfoModal(t('shareCopied', { url: url }));
+      }, function () {
+        window.prompt(t('shareCopyManual'), url);
+      });
+    } else {
+      window.prompt(t('shareCopyManual'), url);
+    }
+  }
+
+  /* Called by js/deck.js once the PDF file has been handed to the browser:
+     says where the file went and that the presentation itself is safe and
+     how to get back to it — the agent stays right on it either way. */
+  BS.afterPdfSaved = function () {
+    var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+    var listing = BS.listing;
+    var buttons = [];
+    if (listing && listing.id) buttons.push({ label: t('pdfSavedCopyLink'), onClick: function () { copyClientLink(listing); } });
+    buttons.push({ label: t('pdfSavedBack'), primary: true });
+    showFinalizeModal(t('pdfSavedMessage'), buttons);
+  };
+
   var deckShareBtn = document.getElementById('deckShareBtn');
   if (deckShareBtn) deckShareBtn.addEventListener('click', function () {
-    requestFinalize(BS.listing, function () {
-      var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
-      var url = location.origin + '/p/' + BS.listing.id;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(function () {
-          showInfoModal(t('shareCopied', { url: url }));
-        }, function () {
-          window.prompt(t('shareCopyManual'), url);
-        });
-      } else {
-        window.prompt(t('shareCopyManual'), url);
-      }
-    });
+    requestFinalize(BS.listing, function () { copyClientLink(BS.listing); });
   });
 
   /* ---------------- Coordinates paste (Yandex / Google Maps) ----------------
@@ -1828,6 +1918,7 @@ window.BS = window.BS || {};
       markEditAuthorized(data.id);
       editAuthorizedListingId = data.id;
       if (data.editToken) { listing.editToken = data.editToken; currentEditToken = data.editToken; }
+      rememberMyListing(listing, currentEditToken);
       if (location.pathname.startsWith('/preview')) {
         // data.editToken only ever arrives on a fresh create (server.js) —
         // this is the one moment the agent's browser learns their listing's
@@ -1851,9 +1942,11 @@ window.BS = window.BS || {};
     window.BSI18n.setLang(btn.getAttribute('data-lang'));
     renderPhotoSlotsUI();
     renderLogoPreview();
+    renderMyListings();
     renderRoute();
   });
 
+  renderMyListings();
   syncPropertyTypeOptions();
   applyPropertyType();
   renderLogoPreview();
