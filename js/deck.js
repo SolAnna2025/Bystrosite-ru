@@ -836,6 +836,7 @@ window.BSDeck = (function () {
     var prevStageTransform = stage.style.transform;
     stage.style.transform = 'none';
 
+    var logo = stage.querySelector('.global-logo');
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080], compress: true });
 
@@ -844,11 +845,17 @@ window.BSDeck = (function () {
       chain = chain.then(function () {
         showSlide(i);
         return prepSlideForPdf(el).then(function (restoreSlide) {
+          // The agent's logo lives on the stage, outside the slide being
+          // rasterized — a copy goes into the slide for its capture, in the
+          // same bottom-right spot and tone (showSlide above set the tone).
+          var logoCopy = logo ? el.appendChild(logo.cloneNode(true)) : null;
           return captureSlideToJpeg(el).then(function (jpeg) {
+            if (logoCopy) logoCopy.remove();
             restoreSlide();
             if (i > 0) doc.addPage([1920, 1080], 'landscape');
             doc.addImage(jpeg, 'JPEG', 0, 0, 1920, 1080);
           }, function (err) {
+            if (logoCopy) logoCopy.remove();
             restoreSlide();
             throw err;
           });
