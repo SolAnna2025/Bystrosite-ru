@@ -524,6 +524,8 @@ window.BS = window.BS || {};
       // own /new-listing → /preview flow just before, in the same tab).
       if (deckBackBtn) deckBackBtn.hidden = true;
       if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
+      var deckShareBtnEl = document.getElementById('deckShareBtn');
+      if (deckShareBtnEl) deckShareBtnEl.hidden = true;
       var stageEl = document.getElementById('stage');
       if (stageEl) stageEl.innerHTML = '<div class="deck-status-msg">' + (window.BSI18n ? window.BSI18n.t('deckLoading') : 'Загрузка…') + '</div>';
       loadListingFromServer(shareId).then(function (listing) {
@@ -580,9 +582,15 @@ window.BS = window.BS || {};
   function showPreview(allowEdit) {
     viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
     if (deckBackBtn) deckBackBtn.hidden = !allowEdit;
-    if (deckEditEntryBtn) deckEditEntryBtn.hidden = allowEdit || !BS.listing || !BS.listing.id;
+    // The public /p/<id> view is the client's: only "Скачать PDF" there.
+    // The agent's own way back in shows only on a device that already
+    // holds this listing's edit token (see storedEditToken) — never for a
+    // client, who would just hit the edit gate asking for a phone number.
+    if (deckEditEntryBtn) deckEditEntryBtn.hidden = allowEdit || !BS.listing || !BS.listing.id || !storedEditToken(BS.listing.id);
     var saveLinkBtn = document.getElementById('deckSaveLinkBtn');
     if (saveLinkBtn) saveLinkBtn.hidden = !allowEdit;
+    var shareBtn = document.getElementById('deckShareBtn');
+    if (shareBtn) shareBtn.hidden = !allowEdit;
     if (window.BSDeck) window.BSDeck.render(BS.listing);
     if (window.BSI18n) window.BSI18n.apply();
   }
@@ -708,7 +716,8 @@ window.BS = window.BS || {};
   if (deckEditEntryBtn) deckEditEntryBtn.addEventListener('click', function (e) {
     e.preventDefault();
     if (deckEditEntryBtn.hidden || !BS.listing || !BS.listing.id) return;
-    navigate('/edit/' + BS.listing.id);
+    var token = storedEditToken(BS.listing.id);
+    navigate('/edit/' + BS.listing.id + (token ? '?t=' + token : ''));
   });
 
   /* ---------------- My presentations (this device) ----------------
