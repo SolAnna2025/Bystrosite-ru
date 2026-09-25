@@ -990,7 +990,8 @@ const server = http.createServer((req, res) => {
   // the catch-all "unknown path -> index.html" fallback below.
   if (urlPath === '/privacy') urlPath = '/privacy.html';
   if (urlPath === '/consent') urlPath = '/consent.html';
-  if (urlPath === '/oferta') urlPath = '/oferta.html';
+  // /oferta is off for now (operator's call): oferta.html stays in the repo
+  // but isn't served — it's left out of PUBLIC_ROOT_FILES below too.
   if (urlPath === '/payment-consent') urlPath = '/payment-consent.html';
 
   // Everything this server needs to serve as a plain static file lives
@@ -1004,7 +1005,7 @@ const server = http.createServer((req, res) => {
   // and these three asset directories are meant to be public; everything
   // else (including future files someone drops in root) falls through to
   // the SPA fallback below, same as any other 404 would.
-  const PUBLIC_ROOT_FILES = new Set(['/index.html', '/privacy.html', '/consent.html', '/oferta.html', '/payment-consent.html']);
+  const PUBLIC_ROOT_FILES = new Set(['/index.html', '/privacy.html', '/consent.html', '/payment-consent.html']);
   const PUBLIC_DIR_PREFIXES = ['/css/', '/js/', '/assets/'];
   const publiclyServable = PUBLIC_ROOT_FILES.has(urlPath) || PUBLIC_DIR_PREFIXES.some(function (p) { return urlPath.indexOf(p) === 0; });
 
