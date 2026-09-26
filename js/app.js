@@ -582,7 +582,8 @@ window.BS = window.BS || {};
   function showPreview(allowEdit) {
     viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
     if (deckBackBtn) deckBackBtn.hidden = !allowEdit;
-    // The public /p/<id> view is the client's: only "Скачать PDF" there.
+    // The public /p/<id> view is the client's: "Скачать PDF" plus
+    // "Создать свою презентацию" (a direct link to the Telegram bot).
     // The agent's own way back in shows only on a device that already
     // holds this listing's edit token (see storedEditToken) — never for a
     // client, who would just hit the edit gate asking for a phone number.
@@ -591,6 +592,8 @@ window.BS = window.BS || {};
     if (saveLinkBtn) saveLinkBtn.hidden = !allowEdit;
     var shareBtn = document.getElementById('deckShareBtn');
     if (shareBtn) shareBtn.hidden = !allowEdit;
+    var createOwnBtn = document.getElementById('deckCreateOwnBtn');
+    if (createOwnBtn) createOwnBtn.hidden = allowEdit;
     if (window.BSDeck) window.BSDeck.render(BS.listing);
     if (window.BSI18n) window.BSI18n.apply();
   }

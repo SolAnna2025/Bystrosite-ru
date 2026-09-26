@@ -556,6 +556,8 @@
 }
 .deck-action-btn:hover { color: #fff; border-color: rgba(242, 239, 232, 0.6); }
 .deck-action-btn:disabled { opacity: 0.6; cursor: default; }
+a.deck-action-btn { text-decoration: none; display: inline-block; }
+.deck-action-btn[hidden] { display: none; }
 
 .deck-nav {
   position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
