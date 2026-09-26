@@ -618,6 +618,16 @@ window.BSDeck = (function () {
     // computed once, safe forever.
     var s = Math.min(vw / 1920, vh / 1080, 1);
     stage.style.transform = 'scale(' + s + ')';
+    // .deck-actions' 145px clearance is sized for the stage at scale 1. On a
+    // short viewport (a landscape phone) that fixed 145px lands mid-slide,
+    // so scale the clearance with the stage instead: stage top edge (it's
+    // centered in .stage-outer) + 145px in stage units. Never lower than
+    // 145px, so desktop and portrait (letterboxed) layouts stay as before.
+    var actions = document.querySelector('.deck-actions');
+    if (actions) {
+      var top = (vh - 1080 * s) / 2 + 145 * s + 8;
+      actions.style.top = Math.round(Math.max(12, Math.min(145, top))) + 'px';
+    }
   }
 
   /* Inactive slides are hidden with display:none — cheap, and correct for
