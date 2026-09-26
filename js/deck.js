@@ -624,9 +624,17 @@ window.BSDeck = (function () {
     // centered in .stage-outer) + 145px in stage units. Never lower than
     // 145px, so desktop and portrait (letterboxed) layouts stay as before.
     var actions = document.querySelector('.deck-actions');
+    // Landscape phone with black bars left/right of the stage: move the
+    // chrome (buttons, nav, edit link) out into those bars so nothing covers
+    // the slide — see .deck-side-chrome in css/deck.css. Desktop windows
+    // wider than 16:9 keep the usual layout.
+    var side = (vw - 1920 * s) / 2;
+    var sideChrome = vw > vh && vh <= 500 && side >= 70;
+    document.body.classList.toggle('deck-side-chrome', sideChrome);
+    document.documentElement.style.setProperty('--deck-side', Math.floor(side) + 'px');
     if (actions) {
       var top = (vh - 1080 * s) / 2 + 145 * s + 8;
-      actions.style.top = Math.round(Math.max(12, Math.min(145, top))) + 'px';
+      actions.style.top = sideChrome ? '' : Math.round(Math.max(12, Math.min(145, top))) + 'px';
     }
   }
 

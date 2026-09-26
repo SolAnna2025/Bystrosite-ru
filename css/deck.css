@@ -585,6 +585,29 @@ a.deck-action-btn { text-decoration: none; display: inline-block; }
 .deck-nav-arrows button:disabled { opacity: 0.3; cursor: not-allowed; }
 .deck-nav-arrows button:hover:not(:disabled) { color: var(--color-accent-light, #cbb79a); }
 
+/* Landscape phone: the stage is pillarboxed, so the chrome moves out into
+   the black side bars (--deck-side = one bar's width) instead of covering
+   the slide. Toggled by fit() in js/deck.js. */
+.deck-side-chrome .deck-actions {
+  top: 12px; right: 4px; width: calc(var(--deck-side) - 8px); max-width: none;
+  flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 6px;
+}
+.deck-side-chrome .deck-action-btn {
+  font-size: 10px; line-height: 1.25; letter-spacing: 0;
+  padding: 6px 2px; border-radius: 12px; white-space: normal; text-align: center; hyphens: auto;
+}
+.deck-side-chrome .deck-nav {
+  left: auto; right: 4px; bottom: 16px; transform: none;
+  width: calc(var(--deck-side) - 8px); box-sizing: border-box;
+  flex-direction: column; gap: 2px; padding: 6px 4px;
+}
+.deck-side-chrome .deck-label { display: none; }
+.deck-side-chrome .deck-back,
+.deck-side-chrome .deck-edit-entry {
+  left: 4px; top: 12px; width: calc(var(--deck-side) - 8px); box-sizing: border-box;
+  font-size: 11px; line-height: 1.3; letter-spacing: 0.02em; padding: 4px; white-space: normal; text-align: left;
+}
+
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
