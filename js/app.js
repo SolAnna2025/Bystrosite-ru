@@ -558,6 +558,7 @@ window.BS = window.BS || {};
 
     viewLanding.hidden = view !== 'landing';
     viewForm.hidden = view !== 'form';
+    if (view === 'form' && BS.restoreDraftOnce) BS.restoreDraftOnce();
     viewPreview.hidden = view !== 'preview';
     // The only other way to reach 'preview' is the agent's own same-tab
     // flow right after submitting the form (BS.listing is already theirs —
@@ -1951,23 +1952,101 @@ window.BS = window.BS || {};
     finishSubmit(state.salePrice, state.rentPrice);
   });
 
-  function finishSubmit(salePrice, rentPrice) {
-    // Carry the id (and finalize state) of whatever was open before this
-    // submit — same-session re-edits (form -> preview -> "← Редактировать"
-    // -> form -> submit again) update that one listing in place instead of
-    // spawning a new /p/<id> each time. A first-ever submit has no prior
-    // BS.listing, so existingId is undefined and persistListing() below
-    // creates a fresh row.
-    var existingId = BS.listing && BS.listing.id;
-    BS.listing = {
-      // The listing's edit_token, proving this save is really its owner —
-      // see server.js handleCreateListing/0010_edit_token.sql. Only
-      // meaningful on a re-edit; a brand new listing has no token yet, the
-      // server mints one and hands it back in the response instead (see
-      // persistListing below). Read off currentEditToken, not the URL
-      // directly — "← Редактировать" (deckBackBtn) navigates to
-      // /new-listing first, which drops the ?t= query string.
-      editToken: existingId ? (currentEditToken || storedEditToken(existingId)) : null,
+  /* ---------------- Draft autosave ----------------
+     On phones the form used to vanish mid-fill: iOS/Telegram's in-app
+     browser reloads a tab it evicted from memory, or the agent tapped a
+     link that left the page — and everything typed, photos included, was
+     gone. A new (not yet saved) listing's form is now kept in IndexedDB
+     (localStorage's ~5MB can't hold the photos) and put back on the next
+     visit to /new-listing. Cleared once the server has saved the listing.
+     Consent boxes are deliberately not part of it — they're re-ticked. */
+  var DRAFT_DB = 'bystrosite-draft';
+  var DRAFT_KEY = 'new-listing';
+  var draftDirty = false;
+  var draftTimer = null;
+  var draftRestoreTried = false;
+
+  function draftStore(mode, fn) {
+    return new Promise(function (resolve) {
+      try {
+        var req = indexedDB.open(DRAFT_DB, 1);
+        req.onupgradeneeded = function () { req.result.createObjectStore('drafts'); };
+        req.onerror = function () { resolve(null); };
+        req.onsuccess = function () {
+          try {
+            var tx = req.result.transaction('drafts', mode);
+            var r = fn(tx.objectStore('drafts'));
+            tx.oncomplete = function () { resolve(r && 'result' in r ? r.result : null); };
+            tx.onerror = tx.onabort = function () { resolve(null); };
+          } catch (e) { resolve(null); }
+        };
+      } catch (e) { resolve(null); }
+    });
+  }
+
+  // Only a brand-new listing — one already on the server (has an id) is
+  // re-editable from its own link and must not be overwritten by a draft.
+  function draftApplies() {
+    return currentView() === 'form' && !(BS.listing && BS.listing.id);
+  }
+
+  function saveDraftNow() {
+    clearTimeout(draftTimer);
+    if (!draftDirty || !draftApplies()) return;
+    draftDirty = false;
+    var d = collectFormListing(num('fSalePrice'), num('fRentPrice'));
+    d.savedAt = Date.now();
+    draftStore('readwrite', function (st) { return st.put(d, DRAFT_KEY); });
+  }
+
+  function scheduleDraftSave() {
+    draftDirty = true;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraftNow, 800);
+  }
+
+  function clearDraft() {
+    draftDirty = false;
+    clearTimeout(draftTimer);
+    return draftStore('readwrite', function (st) { return st.delete(DRAFT_KEY); });
+  }
+
+  form.addEventListener('input', scheduleDraftSave);
+  form.addEventListener('change', scheduleDraftSave);
+  // Photos/logo/QR finish resizing asynchronously, after their 'change'
+  // event — a slower second pass catches what they added.
+  form.addEventListener('change', function () { setTimeout(scheduleDraftSave, 3000); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) saveDraftNow(); });
+  window.addEventListener('pagehide', saveDraftNow);
+
+  function restoreDraftOnce() {
+    if (draftRestoreTried || !draftApplies()) return;
+    draftRestoreTried = true;
+    draftStore('readonly', function (st) { return st.get(DRAFT_KEY); }).then(function (d) {
+      if (!d || !draftApplies() || draftDirty) return;
+      populateFormFromListing(d);
+      var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
+      var note = document.createElement('div');
+      note.className = 'draft-restored-note';
+      var txt = document.createElement('span');
+      txt.textContent = t('draftRestored') + ' ';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-ghost';
+      btn.textContent = t('draftDiscard');
+      btn.addEventListener('click', function () { clearDraft().then(function () { location.reload(); }); });
+      note.appendChild(txt);
+      note.appendChild(btn);
+      form.insertBefore(note, form.firstChild);
+    });
+  }
+  BS.restoreDraftOnce = restoreDraftOnce;
+  restoreDraftOnce();
+
+  // Everything the form holds, as a listing object — used by the submit
+  // below and by the draft autosave.
+  function collectFormListing(salePrice, rentPrice) {
+    return {
       // Fixed server-side at creation only (see 0005_language_and_edit_lockdown.sql
       // — an update's PATCH body never includes this key) — sent on every
       // submit anyway since a *new* listing needs it from its very first save.
@@ -2023,6 +2102,26 @@ window.BS = window.BS || {};
       agentMessengers: selectedMessengers(),
       agentQr: Object.assign({}, BS.agentQr),
     };
+  }
+
+  function finishSubmit(salePrice, rentPrice) {
+    // Carry the id (and finalize state) of whatever was open before this
+    // submit — same-session re-edits (form -> preview -> "← Редактировать"
+    // -> form -> submit again) update that one listing in place instead of
+    // spawning a new /p/<id> each time. A first-ever submit has no prior
+    // BS.listing, so existingId is undefined and persistListing() below
+    // creates a fresh row.
+    var existingId = BS.listing && BS.listing.id;
+    BS.listing = Object.assign({
+      // The listing's edit_token, proving this save is really its owner —
+      // see server.js handleCreateListing/0010_edit_token.sql. Only
+      // meaningful on a re-edit; a brand new listing has no token yet, the
+      // server mints one and hands it back in the response instead (see
+      // persistListing below). Read off currentEditToken, not the URL
+      // directly — "← Редактировать" (deckBackBtn) navigates to
+      // /new-listing first, which drops the ?t= query string.
+      editToken: existingId ? (currentEditToken || storedEditToken(existingId)) : null,
+    }, collectFormListing(salePrice, rentPrice));
     if (existingId) { BS.listing.id = existingId; editAuthorizedListingId = existingId; }
 
     navigate('/preview');
@@ -2112,6 +2211,7 @@ window.BS = window.BS || {};
     }).then(function (data) {
       if (!data || !data.id) return;
       setSaveStatus('saved');
+      clearDraft();
       if (BS.listing !== listing) return; // agent already navigated away/edited again
       listing.id = data.id;
       listing.isFinalized = !!data.isFinalized;
