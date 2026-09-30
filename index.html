@@ -2,6 +2,13 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<!-- The app must never run inside the form's own policy/consent modal
+     iframe. It did on iPhone: a link inside the policy loaded the app there,
+     Safari restores an iframe's last page on reload, and a second full app
+     (with its photos) in the modal ran the tab out of memory, reloading it
+     right after the consent tick, over and over. Same-origin framing only —
+     reading a foreign parent's location throws and is left alone. -->
+<script>try { if (window.self !== window.top && window.top.location.host === location.host) location.replace('/privacy'); } catch (e) {}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Быстросайт — конструктор презентаций недвижимости</title>
 

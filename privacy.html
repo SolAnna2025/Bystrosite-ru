@@ -6,7 +6,19 @@
      footer's "Создайте презентацию — здесь" links sit right where the agent
      has to scroll to; tapping one loaded an empty form inside the modal,
      which looked exactly like the real form had been wiped. -->
-<script>if (window.self !== window.top) document.documentElement.classList.add('in-frame');</script>
+<script>
+if (window.self !== window.top) {
+  document.documentElement.classList.add('in-frame');
+  // Keep the modal on this text: outside links open in a new tab, our own
+  // pages don't open at all (they'd load inside the modal).
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || a.getAttribute('href').charAt(0) === '#') return;
+    if (a.host === location.host) e.preventDefault();
+    else a.target = '_blank';
+  });
+}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Политика обработки персональных данных — Быстросайт</title>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">

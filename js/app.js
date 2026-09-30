@@ -1733,6 +1733,15 @@ window.BS = window.BS || {};
      form (every other required field is checked here in JS too), so a
      plain `required` attribute on the checkbox wouldn't do anything on
      its own. */
+  // iPhone Safari restores an iframe's last-visited page on reload, so the
+  // modal could reopen on whatever the frame last showed instead of the
+  // policy — put its own page back if it isn't there.
+  function resetFrame(frameEl, path) {
+    var here = null;
+    try { here = frameEl.contentWindow && frameEl.contentWindow.location.pathname; } catch (e) {}
+    if (here !== path) frameEl.setAttribute('src', path);
+  }
+
   function wireReadToEndConsent(opts) {
     var checkboxEl = opts.checkboxEl;
     var errorEl = opts.errorEl;
@@ -1760,6 +1769,7 @@ window.BS = window.BS || {};
       checkboxEl.disabled = false;
       hintEl.textContent = window.BSI18n.t(opts.hintReadKey);
       hintEl.classList.add('is-read');
+      if (opts.onRead) opts.onRead();
     }
 
     function checkScroll() {
@@ -1793,8 +1803,12 @@ window.BS = window.BS || {};
     attachScrollListener();
     frameEl.addEventListener('load', attachScrollListener);
 
+    opts.markRead = markRead;
+    opts.hasRead = function () { return hasRead; };
+
     linkEl.addEventListener('click', function (e) {
       e.preventDefault(); // opens the modal instead of navigating away; right-click "open in new tab" still uses the real href
+      resetFrame(frameEl, linkEl.getAttribute('href'));
       modalEl.hidden = false;
       // Layout only settles once the modal is actually visible — check on
       // the next frame rather than synchronously.
@@ -1805,7 +1819,7 @@ window.BS = window.BS || {};
   var fConsentEl = document.getElementById('fConsent');
   var fConsentError = document.getElementById('fConsentError');
   var policyModalEl = document.getElementById('policyModal');
-  wireReadToEndConsent({
+  var policyConsent = {
     checkboxEl: fConsentEl,
     errorEl: fConsentError,
     modalEl: policyModalEl,
@@ -1813,7 +1827,8 @@ window.BS = window.BS || {};
     hintEl: document.getElementById('policyModalHint'),
     linkEl: document.getElementById('fConsentPolicyLink'),
     hintReadKey: 'policyModalHintRead',
-  });
+  };
+  wireReadToEndConsent(policyConsent);
   document.getElementById('policyModalClose').addEventListener('click', function () {
     policyModalEl.hidden = true;
   });
@@ -1838,7 +1853,7 @@ window.BS = window.BS || {};
   var consentFrameEl = document.getElementById('consentFrame');
   document.getElementById('fDataConsentLink').addEventListener('click', function (e) {
     e.preventDefault(); // right-click "open in new tab" still uses the real href
-    if (!consentFrameEl.getAttribute('src')) consentFrameEl.setAttribute('src', '/consent');
+    resetFrame(consentFrameEl, '/consent');
     consentModalEl.hidden = false;
   });
   document.getElementById('consentModalClose').addEventListener('click', function () {
@@ -1965,6 +1980,7 @@ window.BS = window.BS || {};
   var draftDirty = false;
   var draftTimer = null;
   var draftRestoreTried = false;
+  var draftTouched = false; // the agent has typed/added something (not just the demo defaults)
 
   function draftStore(mode, fn) {
     return new Promise(function (resolve) {
@@ -1996,11 +2012,13 @@ window.BS = window.BS || {};
     draftDirty = false;
     var d = collectFormListing(num('fSalePrice'), num('fRentPrice'));
     d.savedAt = Date.now();
+    d.policyRead = policyConsent.hasRead();
     draftStore('readwrite', function (st) { return st.put(d, DRAFT_KEY); });
   }
 
   function scheduleDraftSave() {
     draftDirty = true;
+    draftTouched = true;
     clearTimeout(draftTimer);
     draftTimer = setTimeout(saveDraftNow, 800);
   }
@@ -2011,11 +2029,18 @@ window.BS = window.BS || {};
     return draftStore('readwrite', function (st) { return st.delete(DRAFT_KEY); });
   }
 
-  form.addEventListener('input', scheduleDraftSave);
-  form.addEventListener('change', scheduleDraftSave);
-  // Photos/logo/QR finish resizing asynchronously, after their 'change'
-  // event — a slower second pass catches what they added.
-  form.addEventListener('change', function () { setTimeout(scheduleDraftSave, 3000); });
+  function isConsentBox(el) { return el === fConsentEl || el === fDataConsentEl; }
+  form.addEventListener('input', function (e) { if (!isConsentBox(e.target)) scheduleDraftSave(); });
+  form.addEventListener('change', function (e) {
+    if (isConsentBox(e.target)) return;
+    scheduleDraftSave();
+    // Photos/logo/QR finish resizing asynchronously, after their 'change'
+    // event — a slower second pass catches what they added.
+    setTimeout(scheduleDraftSave, 3000);
+  });
+  // Reading the policy to its end is kept too, so a restored form doesn't
+  // make the agent scroll through it again.
+  policyConsent.onRead = function () { if (draftTouched) scheduleDraftSave(); };
   document.addEventListener('visibilitychange', function () { if (document.hidden) saveDraftNow(); });
   window.addEventListener('pagehide', saveDraftNow);
 
@@ -2025,6 +2050,7 @@ window.BS = window.BS || {};
     draftStore('readonly', function (st) { return st.get(DRAFT_KEY); }).then(function (d) {
       if (!d || !draftApplies() || draftDirty) return;
       populateFormFromListing(d);
+      draftTouched = true;
       var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
       var note = document.createElement('div');
       note.className = 'draft-restored-note';
@@ -2038,6 +2064,10 @@ window.BS = window.BS || {};
       note.appendChild(txt);
       note.appendChild(btn);
       form.insertBefore(note, form.firstChild);
+      if (d.policyRead) {
+        policyConsent.markRead();
+        fConsentEl.closest('.consent-row').scrollIntoView({ block: 'center' });
+      }
     });
   }
   BS.restoreDraftOnce = restoreDraftOnce;
