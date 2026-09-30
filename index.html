@@ -577,7 +577,7 @@
         <div class="field field-checkbox consent-row">
           <label class="checkbox-label">
             <input type="checkbox" id="fDataConsent" disabled>
-            <span><span data-i18n="fDataConsentLabelPrefix">Я даю </span><a href="/consent" target="_blank" rel="noopener" data-i18n="fDataConsentLink">согласие на обработку своих персональных данных</a></span>
+            <span><span data-i18n="fDataConsentLabelPrefix">Я даю </span><a href="/consent" target="_blank" rel="noopener" id="fDataConsentLink" data-i18n="fDataConsentLink">согласие на обработку своих персональных данных</a></span>
           </label>
           <span class="field-note" id="fDataConsentHint" data-i18n="fDataConsentHint">Станет доступно после согласия с политикой выше</span>
           <span class="field-inline-error" id="fDataConsentError" data-i18n="fDataConsentError">Чтобы продолжить, подтвердите согласие на обработку персональных данных</span>
@@ -662,6 +662,24 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-primary" id="editGateSubmit" data-i18n="editGateSubmitBtn">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Data-processing consent text modal ===================== -->
+  <!-- Same idea as policyModal below, minus the read-to-end gate: the
+       fDataConsent label is almost entirely a link to /consent, so on a
+       phone tapping it to tick the box opened a new tab — which in
+       Telegram's in-app browser (and when iOS evicts the backgrounded tab)
+       replaced this page and wiped the whole form, photos included.
+       src is set on first open so the page doesn't load it up front. -->
+  <div class="modal-overlay" id="consentModal" hidden>
+    <div class="modal-box policy-modal-box" role="dialog" aria-modal="true">
+      <div class="policy-modal-frame-wrap">
+        <iframe id="consentFrame" title="Согласие на обработку персональных данных"></iframe>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="consentModalClose" data-i18n="policyModalClose">Закрыть</button>
       </div>
     </div>
   </div>

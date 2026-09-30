@@ -1832,6 +1832,18 @@ window.BS = window.BS || {};
   fConsentEl.addEventListener('change', syncDataConsentAvailability);
   syncDataConsentAvailability();
 
+  // /consent opens in a modal, not a new tab — see #consentModal in index.html.
+  var consentModalEl = document.getElementById('consentModal');
+  var consentFrameEl = document.getElementById('consentFrame');
+  document.getElementById('fDataConsentLink').addEventListener('click', function (e) {
+    e.preventDefault(); // right-click "open in new tab" still uses the real href
+    if (!consentFrameEl.getAttribute('src')) consentFrameEl.setAttribute('src', '/consent');
+    consentModalEl.hidden = false;
+  });
+  document.getElementById('consentModalClose').addEventListener('click', function () {
+    consentModalEl.hidden = true;
+  });
+
   /* Consent follows the contact data. The agent's name, phone, photo,
      messengers and QR codes are the personal data consent was given for;
      once any of them differs from what the saved listing had, both boxes
