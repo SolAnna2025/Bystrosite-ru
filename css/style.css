@@ -297,6 +297,11 @@ figure { margin: 0; }
   background: var(--color-bg);
   color: var(--color-text);
 }
+/* iPhone zooms the page in on focusing any field under 16px and leaves it
+   zoomed — the preview right after submit then opened magnified. */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: 16px !important; }
+}
 .field input:focus-visible,
 .field select:focus-visible,
 .field textarea:focus-visible {

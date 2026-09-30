@@ -14,6 +14,8 @@ if (window.self !== window.top) {
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href]');
     if (!a || a.getAttribute('href').charAt(0) === '#') return;
+    // "← Назад к форме" just closes the modal — the form is right behind it.
+    if (a.classList.contains('policy-back')) { e.preventDefault(); window.parent.postMessage('bs-close-doc-modal', location.origin); return; }
     if (a.host === location.host) e.preventDefault();
     else a.target = '_blank';
   });

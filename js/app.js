@@ -1859,6 +1859,12 @@ window.BS = window.BS || {};
   document.getElementById('consentModalClose').addEventListener('click', function () {
     consentModalEl.hidden = true;
   });
+  // "← Назад к форме" inside the framed policy/consent page (privacy.html).
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || e.data !== 'bs-close-doc-modal') return;
+    consentModalEl.hidden = true;
+    policyModalEl.hidden = true;
+  });
 
   /* Consent follows the contact data. The agent's name, phone, photo,
      messengers and QR codes are the personal data consent was given for;
