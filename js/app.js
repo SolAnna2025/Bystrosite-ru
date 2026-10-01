@@ -237,7 +237,43 @@ window.BS = window.BS || {};
       // — the web view and PDF render in *this*, never the viewer's own
       // browser language. Old rows predate the column: default to 'ru'.
       language: row.language === 'en' ? 'en' : 'ru',
+      // {ru: {...}, en: {...}} — the listing's own texts in both languages
+      // (server.js / lib/translate.js), or null when not translated yet.
+      translations: row.translations || null,
     };
+  }
+
+  /* ---------------- Presentation language (RU / EN) ----------------
+     A translated listing shows in either language: ?lang= on the address
+     picks it (that's also what a shared link carries), otherwise the
+     listing's own. BS.listing itself always keeps the agent's original
+     texts — the form is filled from it — and the deck gets a copy with
+     that language's texts laid over. */
+  function deckLangFor(listing) {
+    var m = /[?&]lang=(ru|en)\b/.exec(location.search);
+    if (m && listing && listing.translations) return m[1];
+    return (listing && listing.language) || 'ru';
+  }
+
+  function displayListing(listing, lang) {
+    var tr = listing && listing.translations && listing.translations[lang];
+    if (!tr) return listing;
+    var out = Object.assign({}, listing);
+    Object.keys(tr).forEach(function (k) { if (tr[k]) out[k] = tr[k]; });
+    return out;
+  }
+
+  function withLangParam(lang) {
+    var q = location.search.replace(/([?&])lang=(ru|en)&?/, '$1').replace(/[?&]$/, '');
+    return location.pathname + q + (q ? '&' : '?') + 'lang=' + lang;
+  }
+
+  function syncDeckLangBtn() {
+    var btn = document.getElementById('deckLangBtn');
+    if (!btn) return;
+    var l = BS.listing;
+    btn.hidden = !(l && l.translations) || viewPreview.hidden;
+    if (!btn.hidden) btn.textContent = deckLangFor(l) === 'en' ? 'Русский' : 'English';
   }
 
   /* ---------------- Router ---------------- */
@@ -651,9 +687,20 @@ window.BS = window.BS || {};
     if (shareBtn) shareBtn.hidden = !allowEdit;
     var createOwnBtn = document.getElementById('deckCreateOwnBtn');
     if (createOwnBtn) createOwnBtn.hidden = allowEdit;
-    if (window.BSDeck) window.BSDeck.render(BS.listing);
+    var lang = deckLangFor(BS.listing);
+    if (window.BSI18n && BS.listing && BS.listing.translations) window.BSI18n.setLang(lang, false);
+    if (window.BSDeck) window.BSDeck.render(displayListing(BS.listing, lang));
     if (window.BSI18n) window.BSI18n.apply();
+    syncDeckLangBtn();
   }
+
+  var deckLangBtn = document.getElementById('deckLangBtn');
+  if (deckLangBtn) deckLangBtn.addEventListener('click', function () {
+    if (!BS.listing || !BS.listing.translations) return;
+    var next = deckLangFor(BS.listing) === 'en' ? 'ru' : 'en';
+    history.replaceState(null, '', withLangParam(next));
+    showPreview(!deckBackBtn.hidden);
+  });
 
   function navigate(path, replace) {
     if (replace) history.replaceState(null, '', path);
@@ -893,8 +940,10 @@ window.BS = window.BS || {};
 
   function showClientShare(listing) {
     var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
-    var url = location.origin + '/p/' + listing.id;
-    var message = t('clientShareText', { title: listing.title || t('myListingsUntitled') });
+    var lang = deckLangFor(listing);
+    var shown = displayListing(listing, lang);
+    var url = location.origin + '/p/' + listing.id + (listing.translations ? '?lang=' + lang : '');
+    var message = t('clientShareText', { title: shown.title || t('myListingsUntitled') });
     showSendLinkDialog(t('clientShareMessage'), message, url, t('shareCopied', { url: url }));
   }
 
@@ -2169,9 +2218,8 @@ window.BS = window.BS || {};
   // below and by the draft autosave.
   function collectFormListing(salePrice, rentPrice) {
     return {
-      // Fixed server-side at creation only (see 0005_language_and_edit_lockdown.sql
-      // — an update's PATCH body never includes this key) — sent on every
-      // submit anyway since a *new* listing needs it from its very first save.
+      // The presentation's language: whatever the form's RU/EN switch is on
+      // when it's saved, on a create and on an edit alike (server.js).
       language: window.BSI18n ? window.BSI18n.getLang() : 'ru',
       propertyType: val('fPropertyType'),
       floorNumber: num('fFloorNumber'),
@@ -2354,6 +2402,14 @@ window.BS = window.BS || {};
       markEditAuthorized(data.id);
       editAuthorizedListingId = data.id;
       if (data.editToken) { listing.editToken = data.editToken; currentEditToken = data.editToken; }
+      if (data.translations) {
+        var hadTranslations = !!listing.translations;
+        listing.translations = data.translations;
+        // Re-render only when the shown language has a version to switch
+        // to now — otherwise just reveal the RU/EN button.
+        if (hadTranslations && !viewPreview.hidden) showPreview(true);
+        else syncDeckLangBtn();
+      }
       rememberMyListing(listing, currentEditToken);
       if (location.pathname.startsWith('/preview')) {
         // data.editToken only ever arrives on a fresh create (server.js) —

@@ -639,3 +639,10 @@ a.deck-action-btn { text-decoration: none; display: inline-block; }
   background: var(--color-surface-2);
   font-family: var(--font-body); font-size: 18px; color: var(--color-text-muted);
 }
+
+/* Portrait phone: buttons sit centred just above (or below) the slide —
+   placed by fit() in js/deck.js. */
+.deck-portrait-chrome .deck-actions {
+  left: 12px; right: 12px; max-width: none; justify-content: center; gap: 8px;
+}
+.deck-portrait-chrome .deck-action-btn { font-size: 12px; padding: 7px 14px; }

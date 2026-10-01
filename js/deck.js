@@ -632,9 +632,22 @@ window.BSDeck = (function () {
     var sideChrome = vw > vh && vh <= 500 && side >= 70;
     document.body.classList.toggle('deck-side-chrome', sideChrome);
     document.documentElement.style.setProperty('--deck-side', Math.floor(side) + 'px');
+    // Portrait phone: the slide is a strip across the middle with empty
+    // space above and below — the buttons go right above the slide (or
+    // below it, when there isn't room above), never on top of it. The
+    // fixed 145px used to land on the slide once the browser's own bars
+    // ate into the height or the buttons wrapped onto several rows.
+    var portrait = !sideChrome && vh > vw;
+    document.body.classList.toggle('deck-portrait-chrome', portrait);
     if (actions) {
-      var top = (vh - 1080 * s) / 2 + 145 * s + 8;
-      actions.style.top = sideChrome ? '' : Math.round(Math.max(12, Math.min(145, top))) + 'px';
+      if (portrait) {
+        var slideTop = (vh - 1080 * s) / 2;
+        var above = slideTop - 10 - actions.offsetHeight;
+        actions.style.top = Math.round(above >= 56 ? above : slideTop + 1080 * s + 10) + 'px';
+      } else {
+        var top = (vh - 1080 * s) / 2 + 145 * s + 8;
+        actions.style.top = sideChrome ? '' : Math.round(Math.max(12, Math.min(145, top))) + 'px';
+      }
     }
   }
 
@@ -1051,7 +1064,13 @@ window.BSDeck = (function () {
       window.visualViewport.addEventListener('resize', fit);
       window.visualViewport.addEventListener('scroll', fit);
     }
-    if (window.ResizeObserver) new ResizeObserver(fit).observe(document.body);
+    if (window.ResizeObserver) {
+      new ResizeObserver(fit).observe(document.body);
+      // Buttons shown/hidden (or wrapping onto another row) change their
+      // height, which the portrait placement above depends on.
+      var actionsEl = document.querySelector('.deck-actions');
+      if (actionsEl) new ResizeObserver(fit).observe(actionsEl);
+    }
 
     btnPrev.addEventListener('click', function () { go(idx - 1); });
     btnNext.addEventListener('click', function () { go(idx + 1); });
