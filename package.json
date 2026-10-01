@@ -13,7 +13,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "cssnano": "^9.0.1",

@@ -895,6 +895,73 @@ function listingOgImageUrl(photos) {
   return SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + photos[key];
 }
 
+/* GET /og/<id>.jpg — the presentation's cover slide as a link-preview
+   image (lib/og-cover.js). ?lang=ru|en picks the kicker language
+   (default: the listing's own); ?v= is only a cache-buster that
+   handlePresentationPage sets from updated_at, so an edited cover gets a
+   fresh URL messengers haven't cached yet. Rendered once per
+   listing/language/version and kept in memory. */
+const OG_IMAGE_RE = /^\/og\/([0-9a-f-]{36})\.jpg$/i;
+const ogCache = new Map(); // key -> JPEG buffer, oldest first
+const OG_CACHE_MAX = 40;
+let ogCoverLib;
+function loadOgCoverLib() {
+  // Loaded on first use: if sharp can't load on some host, every other
+  // route keeps working and previews just fall back to the plain photo.
+  if (ogCoverLib === undefined) {
+    try { ogCoverLib = require('./lib/og-cover'); } catch (e) { console.warn('og-cover unavailable:', e.message); ogCoverLib = null; }
+  }
+  return ogCoverLib;
+}
+
+function listingPhotoUrl(photos, key) {
+  return photos && photos[key] ? SUPABASE_URL + '/storage/v1/object/public/' + SUPABASE_BUCKET + '/' + photos[key] : null;
+}
+
+function handleOgImage(req, res, id) {
+  const lib = loadOgCoverLib();
+  if (!lib || !supabaseConfigured()) { res.writeHead(404); res.end(); return; }
+  const query = new URL(req.url, 'http://x').searchParams;
+  supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=title,photos,location_name,language,updated_at')
+    .then((r) => (r.ok ? r.json() : null))
+    .then(async (rows) => {
+      const row = rows && rows[0];
+      if (!row) { res.writeHead(404); res.end(); return; }
+      const lang = query.get('lang') === 'en' || query.get('lang') === 'ru' ? query.get('lang') : (row.language === 'en' ? 'en' : 'ru');
+      const key = id + ':' + lang + ':' + row.updated_at;
+      let jpeg = ogCache.get(key);
+      if (!jpeg) {
+        let photo = null;
+        const photoUrl = listingOgImageUrl(row.photos);
+        if (photoUrl) {
+          try {
+            const pr = await fetch(photoUrl);
+            if (pr.ok) photo = Buffer.from(await pr.arrayBuffer());
+          } catch (e) { /* drawn without the photo */ }
+        }
+        jpeg = await lib.renderOgCover({ title: row.title, locationName: row.location_name, language: lang }, photo);
+        ogCache.set(key, jpeg);
+        if (ogCache.size > OG_CACHE_MAX) ogCache.delete(ogCache.keys().next().value);
+      }
+      res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': jpeg.length, 'Cache-Control': 'public, max-age=86400' });
+      res.end(jpeg);
+    })
+    .catch((e) => {
+      console.warn('og image render failed:', e);
+      if (!res.headersSent) { res.writeHead(500); }
+      res.end();
+    });
+}
+
+// A short og:description: the description's opening, cut at a word, not
+// the whole text (messengers showed every word of it under the preview).
+function shortDescription(text, max) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  return cut.slice(0, Math.max(cut.lastIndexOf(' '), max * 0.6)).replace(/[\s,.;:—-]+$/, '') + '…';
+}
+
 function handlePresentationPage(req, res, id) {
   function serveDefault() {
     fs.readFile(path.join(root, 'index.html'), (err, data) => {
@@ -906,7 +973,7 @@ function handlePresentationPage(req, res, id) {
 
   if (!supabaseConfigured()) { serveDefault(); return; }
 
-  supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=title,description,photos,location_name')
+  supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=title,description,photos,location_name,language,updated_at')
     .then((r) => (r.ok ? r.json() : null))
     .then((rows) => {
       const listing = rows && rows[0];
@@ -915,14 +982,24 @@ function handlePresentationPage(req, res, id) {
       fs.readFile(path.join(root, 'index.html'), 'utf8', (err, html) => {
         if (err) { serveDefault(); return; }
 
-        const title = escapeHtmlAttr(listing.title || 'Презентация объекта');
+        // ?lang=ru|en on the link picks the preview's language; otherwise
+        // the listing's own.
+        const qLang = new URL(req.url, 'http://x').searchParams.get('lang');
+        const lang = qLang === 'en' || qLang === 'ru' ? qLang : (listing.language === 'en' ? 'en' : 'ru');
+        const title = escapeHtmlAttr(listing.title || (lang === 'en' ? 'Property presentation' : 'Презентация объекта'));
         const description = escapeHtmlAttr(
-          listing.description ||
-          ('Презентация объекта недвижимости' + (listing.location_name ? ' в ' + listing.location_name : '') + '.')
+          shortDescription(listing.description, 160) ||
+          (lang === 'en'
+            ? 'Property presentation' + (listing.location_name ? ' in ' + listing.location_name : '') + '.'
+            : 'Презентация объекта недвижимости' + (listing.location_name ? ' в ' + listing.location_name : '') + '.')
         );
         const proto = req.headers['x-forwarded-proto'] || 'http';
-        const pageUrl = escapeHtmlAttr(proto + '://' + req.headers.host + '/p/' + id);
-        const imageUrl = listingOgImageUrl(listing.photos);
+        const origin = proto + '://' + req.headers.host;
+        const pageUrl = escapeHtmlAttr(origin + '/p/' + id + (qLang === lang ? '?lang=' + lang : ''));
+        // The rendered cover slide when sharp is available, else the raw photo.
+        const imageUrl = loadOgCoverLib()
+          ? origin + '/og/' + id + '.jpg?lang=' + lang + '&v=' + encodeURIComponent(new Date(listing.updated_at || 0).getTime().toString(36))
+          : listingOgImageUrl(listing.photos);
 
         let out = html
           .replace(/<meta property="og:title" content="[^"]*">/, '<meta property="og:title" content="' + title + '">')
@@ -935,7 +1012,13 @@ function handlePresentationPage(req, res, id) {
           out = out
             .replace(/<meta property="og:image" content="[^"]*">/, '<meta property="og:image" content="' + escapedImage + '">')
             .replace(/<meta name="twitter:image" content="[^"]*">/, '<meta name="twitter:image" content="' + escapedImage + '">');
+          if (loadOgCoverLib()) {
+            out = out.replace(/(<meta property="og:image" content="[^"]*">)/, '$1\n<meta property="og:image:type" content="image/jpeg">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">');
+          }
         }
+        out = out
+          .replace(/<title>[^<]*<\/title>/, '<title>' + title + '</title>')
+          .replace(/<meta property="og:site_name" content="[^"]*">/, '$&\n<meta property="og:locale" content="' + (lang === 'en' ? 'en_US' : 'ru_RU') + '">');
 
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(out);
@@ -966,6 +1049,8 @@ const server = http.createServer((req, res) => {
     handleStaticMap(req, res);
     return;
   }
+  const ogMatch = req.method === 'GET' && req.url.split('?')[0].match(OG_IMAGE_RE);
+  if (ogMatch) { handleOgImage(req, res, ogMatch[1]); return; }
   const presentationMatch = req.method === 'GET' && req.url.split('?')[0].match(PRESENTATION_PAGE_RE);
   if (presentationMatch) {
     handlePresentationPage(req, res, presentationMatch[1]);
