@@ -233,47 +233,11 @@ window.BS = window.BS || {};
       // this; the agent's own /edit/<id> ignores it, so an expired listing
       // can always still be reopened and fixed.
       isExpired: !!row.is_expired,
-      // Fixed at creation server-side (see 0005_language_and_edit_lockdown.sql)
-      // — the web view and PDF render in *this*, never the viewer's own
-      // browser language. Old rows predate the column: default to 'ru'.
+      // The language the form was last saved in (server.js) — the web view
+      // and PDF render in *this*, never the viewer's own browser language.
+      // Old rows predate the column: default to 'ru'.
       language: row.language === 'en' ? 'en' : 'ru',
-      // {ru: {...}, en: {...}} — the listing's own texts in both languages
-      // (server.js / lib/translate.js), or null when not translated yet.
-      translations: row.translations || null,
     };
-  }
-
-  /* ---------------- Presentation language (RU / EN) ----------------
-     A translated listing shows in either language: ?lang= on the address
-     picks it (that's also what a shared link carries), otherwise the
-     listing's own. BS.listing itself always keeps the agent's original
-     texts — the form is filled from it — and the deck gets a copy with
-     that language's texts laid over. */
-  function deckLangFor(listing) {
-    var m = /[?&]lang=(ru|en)\b/.exec(location.search);
-    if (m && listing && listing.translations) return m[1];
-    return (listing && listing.language) || 'ru';
-  }
-
-  function displayListing(listing, lang) {
-    var tr = listing && listing.translations && listing.translations[lang];
-    if (!tr) return listing;
-    var out = Object.assign({}, listing);
-    Object.keys(tr).forEach(function (k) { if (tr[k]) out[k] = tr[k]; });
-    return out;
-  }
-
-  function withLangParam(lang) {
-    var q = location.search.replace(/([?&])lang=(ru|en)&?/, '$1').replace(/[?&]$/, '');
-    return location.pathname + q + (q ? '&' : '?') + 'lang=' + lang;
-  }
-
-  function syncDeckLangBtn() {
-    var btn = document.getElementById('deckLangBtn');
-    if (!btn) return;
-    var l = BS.listing;
-    btn.hidden = !(l && l.translations) || viewPreview.hidden;
-    if (!btn.hidden) btn.textContent = deckLangFor(l) === 'en' ? 'Русский' : 'English';
   }
 
   /* ---------------- Router ---------------- */
@@ -687,20 +651,9 @@ window.BS = window.BS || {};
     if (shareBtn) shareBtn.hidden = !allowEdit;
     var createOwnBtn = document.getElementById('deckCreateOwnBtn');
     if (createOwnBtn) createOwnBtn.hidden = allowEdit;
-    var lang = deckLangFor(BS.listing);
-    if (window.BSI18n && BS.listing && BS.listing.translations) window.BSI18n.setLang(lang, false);
-    if (window.BSDeck) window.BSDeck.render(displayListing(BS.listing, lang));
+    if (window.BSDeck) window.BSDeck.render(BS.listing);
     if (window.BSI18n) window.BSI18n.apply();
-    syncDeckLangBtn();
   }
-
-  var deckLangBtn = document.getElementById('deckLangBtn');
-  if (deckLangBtn) deckLangBtn.addEventListener('click', function () {
-    if (!BS.listing || !BS.listing.translations) return;
-    var next = deckLangFor(BS.listing) === 'en' ? 'ru' : 'en';
-    history.replaceState(null, '', withLangParam(next));
-    showPreview(!deckBackBtn.hidden);
-  });
 
   function navigate(path, replace) {
     if (replace) history.replaceState(null, '', path);
@@ -940,10 +893,8 @@ window.BS = window.BS || {};
 
   function showClientShare(listing) {
     var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
-    var lang = deckLangFor(listing);
-    var shown = displayListing(listing, lang);
-    var url = location.origin + '/p/' + listing.id + (listing.translations ? '?lang=' + lang : '');
-    var message = t('clientShareText', { title: shown.title || t('myListingsUntitled') });
+    var url = location.origin + '/p/' + listing.id;
+    var message = t('clientShareText', { title: listing.title || t('myListingsUntitled') });
     showSendLinkDialog(t('clientShareMessage'), message, url, t('shareCopied', { url: url }));
   }
 
@@ -2402,14 +2353,6 @@ window.BS = window.BS || {};
       markEditAuthorized(data.id);
       editAuthorizedListingId = data.id;
       if (data.editToken) { listing.editToken = data.editToken; currentEditToken = data.editToken; }
-      if (data.translations) {
-        var hadTranslations = !!listing.translations;
-        listing.translations = data.translations;
-        // Re-render only when the shown language has a version to switch
-        // to now — otherwise just reveal the RU/EN button.
-        if (hadTranslations && !viewPreview.hidden) showPreview(true);
-        else syncDeckLangBtn();
-      }
       rememberMyListing(listing, currentEditToken);
       if (location.pathname.startsWith('/preview')) {
         // data.editToken only ever arrives on a fresh create (server.js) —

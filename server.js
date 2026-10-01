@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const timeweb = require('./lib/timeweb');
-const translate = require('./lib/translate');
 
 const root = __dirname;
 // Render/Railway/etc. assign the listening port at runtime via $PORT and
@@ -329,23 +328,6 @@ async function twGetAgentProfile(agentId) {
   };
 }
 
-/* A listing's RU/EN texts (lib/translate.js) live next to its photos as
-   <id>/translations.json in Storage rather than in a new table column —
-   read and written only here, through the authenticated (uncached) path. */
-async function readTranslations(id) {
-  try {
-    const r = await fetch(SUPABASE_URL + '/storage/v1/object/authenticated/' + SUPABASE_BUCKET + '/' + id + '/translations.json', {
-      headers: { apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + SUPABASE_SERVICE_ROLE_KEY },
-    });
-    if (!r.ok) return null;
-    return await r.json();
-  } catch (e) { return null; }
-}
-
-function publicTranslations(tr) {
-  return tr && tr.ru && tr.en ? { ru: tr.ru, en: tr.en } : null;
-}
-
 async function getListingRow(id) {
   const res = await supabaseRest('/listings?id=eq.' + encodeURIComponent(id) + '&select=id,agent_phone,agent_id,is_finalized,photos,logo_path,agent_photo_path,agent_qr,edit_token');
   if (!res.ok) return null;
@@ -379,7 +361,6 @@ async function handlePublicListingView(req, res, id) {
     // reload, which only ever needs it back-channel, in the URL it already
     // has. Leaking it here would recreate the exact hole it fixes.
     delete row.edit_token;
-    row.translations = publicTranslations(await readTranslations(id));
     row.is_expired = !!(row.expires_at && new Date(row.expires_at) < new Date());
 
     if (timeweb.configured() && row.agent_id) {
@@ -848,8 +829,8 @@ function handleCreateListing(req, res) {
       // The language the form was saved in (its RU/EN switch). Used to be
       // fixed at creation (0005_language_and_edit_lockdown.sql), which left
       // an agent who switched an existing presentation to English with a
-      // Russian one that also reopened for editing in Russian. Now that the
-      // texts are translated too (lib/translate.js), switching is the point.
+      // Russian one that also reopened for editing in Russian. The agent
+      // writes the texts in that language themselves.
       if (listing.language === 'en' || listing.language === 'ru' || !isUpdate) {
         row.language = listing.language === 'en' ? 'en' : 'ru';
       }
@@ -871,20 +852,6 @@ function handleCreateListing(req, res) {
         throw new Error((isUpdate ? 'update' : 'insert') + ' failed: ' + listingRes.status + ' ' + body);
       }
 
-      // RU + EN versions of the agent's own texts — after the row is safely
-      // saved, and never a reason to fail the save itself.
-      let translations = null;
-      if (translate.configured()) {
-        try {
-          const tr = await translate.buildTranslations(listing, isUpdate ? await readTranslations(id) : null);
-          const up = await supabaseStorageUpload(id + '/translations.json', Buffer.from(JSON.stringify(tr)), 'application/json');
-          if (!up.ok) throw new Error('upload ' + up.status);
-          translations = publicTranslations(tr);
-        } catch (e) {
-          console.warn('translation failed for ' + id + ':', e.message);
-        }
-      }
-
       // Reaching this point always means the listing is (now) editable —
       // handleCreateListing only ever gets here when it wasn't finalized,
       // or when reopening it (above) just cleared that flag. editToken is
@@ -892,7 +859,7 @@ function handleCreateListing(req, res) {
       // /edit/<id>?t=<token> URL it replaces the address bar with) — an
       // update never needs it back, its /edit/<id> link already has it.
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ id: id, isFinalized: false, editToken: editToken || undefined, translations: translations || undefined }));
+      res.end(JSON.stringify({ id: id, isFinalized: false, editToken: editToken || undefined }));
     } catch (e) {
       console.error('create-listing failed:', e);
       res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -963,9 +930,7 @@ function handleOgImage(req, res, id) {
       const row = rows && rows[0];
       if (!row) { res.writeHead(404); res.end(); return; }
       const lang = query.get('lang') === 'en' || query.get('lang') === 'ru' ? query.get('lang') : (row.language === 'en' ? 'en' : 'ru');
-      const tr = publicTranslations(await readTranslations(id));
-      const texts = tr ? tr[lang] : {};
-      const key = id + ':' + lang + ':' + row.updated_at + ':' + (texts.title || '');
+      const key = id + ':' + lang + ':' + row.updated_at;
       let jpeg = ogCache.get(key);
       if (!jpeg) {
         let photo = null;
@@ -976,7 +941,7 @@ function handleOgImage(req, res, id) {
             if (pr.ok) photo = Buffer.from(await pr.arrayBuffer());
           } catch (e) { /* drawn without the photo */ }
         }
-        jpeg = await lib.renderOgCover({ title: texts.title || row.title, locationName: texts.locationName || row.location_name, language: lang }, photo);
+        jpeg = await lib.renderOgCover({ title: row.title, locationName: row.location_name, language: lang }, photo);
         ogCache.set(key, jpeg);
         if (ogCache.size > OG_CACHE_MAX) ogCache.delete(ogCache.keys().next().value);
       }
@@ -1015,7 +980,6 @@ function handlePresentationPage(req, res, id) {
     .then(async (rows) => {
       const listing = rows && rows[0];
       if (!listing) { serveDefault(); return; }
-      const tr = publicTranslations(await readTranslations(id));
 
       fs.readFile(path.join(root, 'index.html'), 'utf8', (err, html) => {
         if (err) { serveDefault(); return; }
@@ -1024,11 +988,6 @@ function handlePresentationPage(req, res, id) {
         // the listing's own.
         const qLang = new URL(req.url, 'http://x').searchParams.get('lang');
         const lang = qLang === 'en' || qLang === 'ru' ? qLang : (listing.language === 'en' ? 'en' : 'ru');
-        if (tr && tr[lang]) {
-          if (tr[lang].title) listing.title = tr[lang].title;
-          if (tr[lang].description) listing.description = tr[lang].description;
-          if (tr[lang].locationName) listing.location_name = tr[lang].locationName;
-        }
         const title = escapeHtmlAttr(listing.title || (lang === 'en' ? 'Property presentation' : 'Презентация объекта'));
         const description = escapeHtmlAttr(
           shortDescription(listing.description, 160) ||
