@@ -331,8 +331,21 @@ window.BS = window.BS || {};
     return item && item.t ? item.t : null;
   }
 
+  // /edit/<id>/form — the form for an already-saved listing. It used to be
+  // /new-listing with the id held only in memory, so a phone reloading an
+  // evicted tab (switching apps and coming back) dropped the agent into a
+  // blank new-listing form; now the address itself says what's open.
+  function isEditFormPath() {
+    return /^\/edit\/[0-9a-fA-F-]{36}\/form\/?$/.test(location.pathname);
+  }
+
+  function editFormPath(id) {
+    var token = currentEditToken || storedEditToken(id);
+    return '/edit/' + id + '/form' + (token ? '?t=' + token : '');
+  }
+
   function currentView() {
-    if (editListingId()) return 'edit';
+    if (editListingId()) return isEditFormPath() ? 'editform' : 'edit';
     if (location.pathname.startsWith('/preview') || sharedListingId()) return 'preview';
     if (location.pathname.startsWith('/new-listing')) return 'form';
     return 'landing';
@@ -389,6 +402,40 @@ window.BS = window.BS || {};
     });
   }
 
+  // Where a just-authorized /edit/<id>[/form] goes next.
+  function openEditTarget(id) {
+    if (currentView() === 'editform') showEditForm(id);
+    else loadAndShowEdit(id);
+  }
+
+  // /edit/<id>/form: the listing's own data in the form, plus any unsaved
+  // edits kept from before the tab was reloaded (see the draft autosave).
+  var pendingEditFormId = null;
+  function showEditForm(id) {
+    pendingEditFormId = id;
+    function show() {
+      viewLanding.hidden = true; viewPreview.hidden = true; viewForm.hidden = false;
+      if (window.BSI18n) window.BSI18n.apply();
+      if (BS.restoreDraftOnce) BS.restoreDraftOnce();
+    }
+    if (BS.listing && BS.listing.id === id && editAuthorizedListingId === id) { show(); return; }
+    viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
+    if (deckBackBtn) deckBackBtn.hidden = true;
+    if (deckEditEntryBtn) deckEditEntryBtn.hidden = true;
+    var stageEl = document.getElementById('stage');
+    if (stageEl) stageEl.innerHTML = '<div class="deck-status-msg">' + (window.BSI18n ? window.BSI18n.t('deckLoading') : 'Загрузка…') + '</div>';
+    loadListingFromServer(id).then(function (listing) {
+      if (pendingEditFormId !== id || currentView() !== 'editform') return;
+      if (renderLoadFailure(stageEl, listing)) return;
+      BS.listing = listing;
+      editAuthorizedListingId = id;
+      rememberMyListing(listing, currentEditToken || editTokenFromUrl());
+      if (window.BSI18n) window.BSI18n.setLang(listing.language || 'ru');
+      populateFormFromListing(listing);
+      show();
+    });
+  }
+
   function showEditGateModal(editId) {
     viewLanding.hidden = true; viewForm.hidden = true; viewPreview.hidden = false;
     var gateStageEl = document.getElementById('stage');
@@ -422,9 +469,9 @@ window.BS = window.BS || {};
         // needs the public phone number again.
         if (data.token) {
           currentEditToken = data.token;
-          history.replaceState(null, '', '/edit/' + id + '?t=' + data.token);
+          history.replaceState(null, '', location.pathname + '?t=' + data.token);
         }
-        loadAndShowEdit(id);
+        openEditTarget(id);
       } else {
         editGatePhoneErrorEl.classList.add('visible');
       }
@@ -463,7 +510,7 @@ window.BS = window.BS || {};
       if (data && data.ok) {
         markEditAuthorized(id);
         currentEditToken = token;
-        loadAndShowEdit(id);
+        openEditTarget(id);
       } else {
         lastFailedTokenAuth = id + ':' + token;
         showEditGateModal(id);
@@ -479,10 +526,10 @@ window.BS = window.BS || {};
     var view = currentView();
     var shareId = sharedListingId();
 
-    if (view === 'edit') {
+    if (view === 'edit' || view === 'editform') {
       var editId = editListingId();
       if (!editTokenFromUrl() && storedEditToken(editId)) {
-        history.replaceState(null, '', '/edit/' + editId + '?t=' + storedEditToken(editId));
+        history.replaceState(null, '', location.pathname + '?t=' + storedEditToken(editId));
       }
       if (!editAuthorized(editId)) {
         var urlToken = editTokenFromUrl();
@@ -499,6 +546,7 @@ window.BS = window.BS || {};
       // can't have happened without a fresh renderRoute() of its own).
       if (!currentEditToken) currentEditToken = editTokenFromUrl();
       editGateModalEl.hidden = true;
+      if (view === 'editform') { showEditForm(editId); return; }
       if (BS.listing && BS.listing.id === editId) {
         showPreview(true);
         return;
@@ -553,6 +601,14 @@ window.BS = window.BS || {};
     if (view === 'preview' && !shareId && !BS.listing) {
       // Nothing to preview yet (e.g. direct load of /preview) — send back to the form.
       navigate('/new-listing', true);
+      return;
+    }
+
+    // The form showing an already-saved listing (browser Back from its
+    // /edit/<id> preview) — give it its own durable address, so a reload
+    // reopens this listing rather than a blank new one.
+    if (view === 'form' && BS.listing && BS.listing.id && editAuthorizedListingId === BS.listing.id) {
+      navigate(editFormPath(BS.listing.id), true);
       return;
     }
 
@@ -614,6 +670,10 @@ window.BS = window.BS || {};
     var path = el.getAttribute('data-nav') || el.getAttribute('href');
     if (!path) return;
     e.preventDefault();
+    // "Create" means a new listing — not the saved one still in memory
+    // (which would otherwise reopen at its /edit/<id>/form, see renderRoute).
+    // A real load starts clean; its own new-listing draft comes back.
+    if (path === '/new-listing' && BS.listing && BS.listing.id) { location.href = path; return; }
     navigate(path);
   });
 
@@ -709,7 +769,7 @@ window.BS = window.BS || {};
     if (deckBackBtn.hidden) return; // defense in depth — see showPreview(allowEdit)
     requestEditAccess(BS.listing, function () {
       populateFormFromListing(BS.listing);
-      navigate('/new-listing');
+      navigate(editFormPath(BS.listing.id));
     });
   });
 
@@ -1985,7 +2045,7 @@ window.BS = window.BS || {};
   var DRAFT_KEY = 'new-listing';
   var draftDirty = false;
   var draftTimer = null;
-  var draftRestoreTried = false;
+  var draftRestoreTried = {}; // per draft key
   var draftTouched = false; // the agent has typed/added something (not just the demo defaults)
 
   function draftStore(mode, fn) {
@@ -2006,10 +2066,18 @@ window.BS = window.BS || {};
     });
   }
 
-  // Only a brand-new listing — one already on the server (has an id) is
-  // re-editable from its own link and must not be overwritten by a draft.
+  // A brand-new listing's form keeps its draft under DRAFT_KEY; an
+  // already-saved listing's /edit/<id>/form keeps its unsaved edits
+  // separately, per listing, so they never mix.
   function draftApplies() {
-    return currentView() === 'form' && !(BS.listing && BS.listing.id);
+    var v = currentView();
+    if (v === 'form') return !(BS.listing && BS.listing.id);
+    if (v === 'editform') return !!(BS.listing && BS.listing.id === editListingId());
+    return false;
+  }
+
+  function draftKey() {
+    return BS.listing && BS.listing.id ? 'edit:' + BS.listing.id : DRAFT_KEY;
   }
 
   function saveDraftNow() {
@@ -2019,7 +2087,8 @@ window.BS = window.BS || {};
     var d = collectFormListing(num('fSalePrice'), num('fRentPrice'));
     d.savedAt = Date.now();
     d.policyRead = policyConsent.hasRead();
-    draftStore('readwrite', function (st) { return st.put(d, DRAFT_KEY); });
+    var key = draftKey();
+    draftStore('readwrite', function (st) { return st.put(d, key); });
   }
 
   function scheduleDraftSave() {
@@ -2029,10 +2098,11 @@ window.BS = window.BS || {};
     draftTimer = setTimeout(saveDraftNow, 800);
   }
 
-  function clearDraft() {
+  function clearDraft(key) {
+    key = key || draftKey();
     draftDirty = false;
     clearTimeout(draftTimer);
-    return draftStore('readwrite', function (st) { return st.delete(DRAFT_KEY); });
+    return draftStore('readwrite', function (st) { return st.delete(key); });
   }
 
   function isConsentBox(el) { return el === fConsentEl || el === fDataConsentEl; }
@@ -2051,11 +2121,25 @@ window.BS = window.BS || {};
   window.addEventListener('pagehide', saveDraftNow);
 
   function restoreDraftOnce() {
-    if (draftRestoreTried || !draftApplies()) return;
-    draftRestoreTried = true;
-    draftStore('readonly', function (st) { return st.get(DRAFT_KEY); }).then(function (d) {
-      if (!d || !draftApplies() || draftDirty) return;
-      populateFormFromListing(d);
+    if (!draftApplies()) return;
+    var key = draftKey();
+    if (draftRestoreTried[key]) return;
+    draftRestoreTried[key] = true;
+    draftStore('readonly', function (st) { return st.get(key); }).then(function (d) {
+      if (!d || !draftApplies() || draftKey() !== key || draftDirty) return;
+      var editingId = BS.listing && BS.listing.id;
+      if (editingId) {
+        // Unsaved edits of a saved listing: consent stays as the saved
+        // listing had it, measured against its *saved* contacts.
+        var snapshot = contactSnapshot;
+        d.id = editingId;
+        populateFormFromListing(d);
+        delete d.id;
+        contactSnapshot = snapshot;
+        checkContactsChanged();
+      } else {
+        populateFormFromListing(d);
+      }
       draftTouched = true;
       var t = window.BSI18n ? window.BSI18n.t : function (k) { return k; };
       var note = document.createElement('div');
@@ -2066,11 +2150,13 @@ window.BS = window.BS || {};
       btn.type = 'button';
       btn.className = 'btn btn-ghost';
       btn.textContent = t('draftDiscard');
-      btn.addEventListener('click', function () { clearDraft().then(function () { location.reload(); }); });
+      btn.addEventListener('click', function () { clearDraft(key).then(function () { location.reload(); }); });
       note.appendChild(txt);
       note.appendChild(btn);
+      var oldNote = form.querySelector('.draft-restored-note');
+      if (oldNote) oldNote.remove();
       form.insertBefore(note, form.firstChild);
-      if (d.policyRead) {
+      if (d.policyRead && !editingId) {
         policyConsent.markRead();
         fConsentEl.closest('.consent-row').scrollIntoView({ block: 'center' });
       }
@@ -2160,7 +2246,14 @@ window.BS = window.BS || {};
     }, collectFormListing(salePrice, rentPrice));
     if (existingId) { BS.listing.id = existingId; editAuthorizedListingId = existingId; }
 
-    navigate('/preview');
+    // A re-edit already has its durable /edit/<id> address — go there, not
+    // to /preview, which a reloaded tab can't restore.
+    if (existingId) {
+      var token = BS.listing.editToken;
+      navigate('/edit/' + existingId + (token ? '?t=' + token : ''));
+    } else {
+      navigate('/preview');
+    }
     persistListing(BS.listing);
   }
 
@@ -2224,6 +2317,9 @@ window.BS = window.BS || {};
     function settle() { if (!settled) { settled = true; savesInFlight--; } }
     savesInFlight++;
     setSaveStatus('saving');
+    // Which draft this save makes obsolete — fixed now, before a fresh
+    // create gets its id below.
+    var savedDraftKey = listing.id ? 'edit:' + listing.id : DRAFT_KEY;
     fetch('/api/listings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2247,7 +2343,7 @@ window.BS = window.BS || {};
     }).then(function (data) {
       if (!data || !data.id) return;
       setSaveStatus('saved');
-      clearDraft();
+      clearDraft(savedDraftKey);
       if (BS.listing !== listing) return; // agent already navigated away/edited again
       listing.id = data.id;
       listing.isFinalized = !!data.isFinalized;
